@@ -226,7 +226,45 @@ documented scope boundary rather than an omission.
 Fail-safe direction is the important design decision here: when the analysis is
 uncertain, it must resolve toward **reachable**.
 
-### 3.5 Risk aggregation
+### 3.5 Optional LLM explanation layer (`chainguard/llm/`)
+
+**Disabled by default. The system is fully functional without it.**
+
+The classifier decides; this layer only renders that decision as prose a
+developer can act on. Three constraints follow from it being a presentation
+layer rather than a detector:
+
+- **It never changes a verdict.** The model is given the evidence and asked to
+  explain it, not to re-decide.
+- **Every failure degrades to a deterministic local summary** — no key, no
+  network, a rate limit, a malformed response. An optional feature must never be
+  able to fail a scan.
+- **Only evidence is sent, never package source.** Signal codes, file paths and
+  the short snippets the analyser already extracted. Shipping whole packages to a
+  third party would be a data-egress decision nobody asked for.
+
+Every result records `explanation_source`, so the interface can never present a
+templated sentence as model-written analysis, or the reverse.
+
+Reachability verdicts are explained locally only: the call path is already the
+clearest possible explanation of why something is reachable — a concrete chain of
+calls with file and line numbers — and prose would restate it less precisely.
+
+### 3.6 Reporting (`chainguard/reporting/`)
+
+Scan results render to a **self-contained HTML file**: no CDN scripts, no web
+fonts, no linked stylesheet. That follows from the actual use case — the report
+gets emailed, committed, or opened from a USB stick on a machine with no network,
+and a report that renders as unstyled text because a CDN was unreachable is not a
+report.
+
+It doubles as the print path. Browsers print HTML well, and a print stylesheet is
+far less machinery than a PDF toolchain with its own binary dependency.
+
+Package names come from a registry and are attacker-controlled, so everything
+interpolated into the report is HTML-escaped.
+
+### 3.7 Risk aggregation
 
 A single package's risk combines three independent axes, kept separate in the
 data model and only merged for display ordering:
@@ -332,16 +370,53 @@ college-project/
 
 ---
 
-## 8. Evaluation plan
+## 8. Evaluation
 
-The project is assessed on measurable outcomes, not on features shipped:
+The project is assessed on measurable outcomes, not on features shipped.
 
-1. **Detection quality** — precision, recall, F1, PR-AUC on a grouped held-out
-   test set; confusion matrix; comparison against a rules-only baseline to show
-   the ML layer earns its place.
-2. **Reachability reduction** — the headline metric: total CVEs reported vs.
-   CVEs proven reachable, on a set of real sample projects. Expected reduction is
-   large, and quantifying it is the project's central empirical claim.
-3. **Performance** — end-to-end scan latency vs. dependency count.
-4. **Ablation** — detection metrics with feature groups removed, showing which
-   signal families actually carry the model.
+### 8.1 Detection quality
+
+Precision, recall, F1 and PR-AUC from **grouped** cross-validation
+(`StratifiedGroupKFold` by package name), reported from out-of-fold predictions
+so no sample is ever scored by a model that saw it. PR-AUC leads over accuracy
+because the deployment class balance is extreme.
+
+Compared against a **rules-only baseline** — a weighted-sum engine over the same
+signals, scored on the same data. Without that comparison, "we used machine
+learning" is an assertion rather than a result.
+
+Two caveats are recorded in the model card rather than left for a reviewer to
+find: the baseline score is itself a feature (so the model is a stacked learner
+over the rules engine, not an independent alternative), and structural features
+rank highly partly because malicious samples are small droppers while benign ones
+are large libraries.
+
+### 8.2 Reachability reduction — the central claim
+
+Total advisories reported vs. advisories proven reachable, on real projects.
+
+Measured on `demo/vulnerable-app`: **92 advisories → 3 reachable, 97% ruled
+out**, with a call-path proof for each reachable finding. The remediation plan
+ranks `pyyaml` (3 fixes, all reachable) above `pillow` (56 fixes, none
+reachable) — ordering by raw count would send a developer to fix the wrong thing
+first.
+
+### 8.3 Ablation
+
+Detection metrics with each feature family zeroed and the model retrained,
+showing which signal families actually carry it. Zeroing rather than dropping
+keeps the feature count constant so every ablated model is directly comparable.
+
+### 8.4 False-positive measurement on real packages
+
+The engine is run against popular real packages and the results inspected
+individually. This found seven systematic false positives (BUILD_LOG D-022), each
+traced to a cause and fixed, moving real packages from 0.40–1.00 down to
+0.00–0.41 on the rules baseline while synthetic malicious samples held at 0.99+.
+
+### 8.5 Correctness of the analysis engine
+
+91+ offline tests covering the analysers, archive safety controls, reachability
+verdicts, vault integrity and leakage prevention. Several are named for the
+specific real package whose false positive motivated them, so the reason a
+threshold sits where it does cannot be lost.
