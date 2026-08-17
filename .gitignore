@@ -37,6 +37,11 @@ data/quarantine/*
 data/cache/
 data/corpus/
 data/reports/
+
+# Local scan history. Contains absolute paths from this machine and is
+# regenerated on first run.
+data/*.db
+data/*.db-journal
 data/models/*.joblib
 data/models/*.pkl
 !data/models/.gitkeep
