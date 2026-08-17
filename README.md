@@ -27,6 +27,22 @@ dependency tree cannot be reached from the application, and reporting them
 without that distinction is why known-vulnerable dependencies stay unpatched:
 the signal drowns in noise.
 
+## Results
+
+Detection, from grouped 5-fold cross-validation over **1,797 real packages**
+(898 malicious from a published research dataset, 899 downloaded live):
+
+| Metric | Model | Rules baseline |
+|---|---|---|
+| Precision | **0.962** | 0.842 |
+| Recall | **0.939** | 0.428 |
+| F1 | **0.950** | 0.565 |
+| PR-AUC | **0.986** | 0.719 |
+
+Every figure is out-of-fold, with splits grouped by package name so no version of
+a package can appear on both sides. Full detail, including six stated
+limitations, is in [docs/MODEL_CARD.md](docs/MODEL_CARD.md).
+
 ---
 
 ## Quick start
@@ -133,6 +149,7 @@ the other.
 |---|---|
 | [ARCHITECTURE.md](ARCHITECTURE.md) | System design, component rationale, technology choices, evaluation plan |
 | [BUILD_LOG.md](BUILD_LOG.md) | Every design decision, the alternatives rejected, and the bugs found along the way |
+| [docs/MODEL_CARD.md](docs/MODEL_CARD.md) | Classifier metrics, ablation, and what the model cannot do |
 | [docs/DATASET.md](docs/DATASET.md) | Training data provenance, label-leakage prevention, known limitations |
 | [docs/DEMO.md](docs/DEMO.md) | Ten-minute walkthrough for a review panel |
 | [PROGRESS.md](PROGRESS.md) | Build state |

@@ -61,359 +61,502 @@
     "rules_baseline_score"
   ],
   "algorithm": "gradient_boosting",
-  "trained_at": "2026-08-17T19:47:44.358901+00:00",
-  "n_samples": 48,
-  "n_malicious": 24,
-  "n_benign": 24,
+  "trained_at": "2026-08-17T20:04:45.189438+00:00",
+  "n_samples": 1797,
+  "n_malicious": 898,
+  "n_benign": 899,
   "metrics": {
-    "accuracy": 0.8333,
-    "precision": 0.8333,
-    "recall": 0.8333,
-    "f1": 0.8333,
-    "roc_auc": 0.9601,
-    "pr_auc": 0.9647,
+    "accuracy": 0.951,
+    "precision": 0.9623,
+    "recall": 0.9388,
+    "f1": 0.9504,
+    "roc_auc": 0.9803,
+    "pr_auc": 0.9856,
     "confusion_matrix": {
-      "true_negative": 20,
-      "false_positive": 4,
-      "false_negative": 4,
-      "true_positive": 20
+      "true_negative": 866,
+      "false_positive": 33,
+      "false_negative": 55,
+      "true_positive": 843
     },
     "threshold": 0.5,
     "support": {
-      "benign": 24,
-      "malicious": 24
+      "benign": 899,
+      "malicious": 898
     },
-    "n_splits": 3,
+    "n_splits": 5,
     "per_fold": [
       {
-        "accuracy": 0.6875,
-        "precision": 0.6667,
-        "recall": 0.75,
-        "f1": 0.7059,
-        "roc_auc": 0.875,
-        "pr_auc": 0.903,
+        "accuracy": 0.9417,
+        "precision": 0.9435,
+        "recall": 0.9382,
+        "f1": 0.9408,
+        "roc_auc": 0.9821,
+        "pr_auc": 0.9863,
         "confusion_matrix": {
-          "true_negative": 5,
-          "false_positive": 3,
-          "false_negative": 2,
-          "true_positive": 6
+          "true_negative": 172,
+          "false_positive": 10,
+          "false_negative": 11,
+          "true_positive": 167
         },
         "threshold": 0.5,
         "support": {
-          "benign": 8,
-          "malicious": 8
+          "benign": 182,
+          "malicious": 178
         }
       },
       {
-        "accuracy": 0.875,
-        "precision": 0.875,
-        "recall": 0.875,
-        "f1": 0.875,
-        "roc_auc": 0.9844,
-        "pr_auc": 0.9861,
+        "accuracy": 0.961,
+        "precision": 0.9598,
+        "recall": 0.9598,
+        "f1": 0.9598,
+        "roc_auc": 0.9827,
+        "pr_auc": 0.9876,
         "confusion_matrix": {
-          "true_negative": 7,
-          "false_positive": 1,
-          "false_negative": 1,
-          "true_positive": 7
+          "true_negative": 178,
+          "false_positive": 7,
+          "false_negative": 7,
+          "true_positive": 167
         },
         "threshold": 0.5,
         "support": {
-          "benign": 8,
-          "malicious": 8
+          "benign": 185,
+          "malicious": 174
         }
       },
       {
-        "accuracy": 0.9375,
-        "precision": 1.0,
-        "recall": 0.875,
-        "f1": 0.9333,
-        "roc_auc": 0.9844,
-        "pr_auc": 0.9861,
+        "accuracy": 0.9499,
+        "precision": 0.9775,
+        "recall": 0.9255,
+        "f1": 0.9508,
+        "roc_auc": 0.976,
+        "pr_auc": 0.9834,
         "confusion_matrix": {
-          "true_negative": 8,
-          "false_positive": 0,
-          "false_negative": 1,
-          "true_positive": 7
+          "true_negative": 167,
+          "false_positive": 4,
+          "false_negative": 14,
+          "true_positive": 174
         },
         "threshold": 0.5,
         "support": {
-          "benign": 8,
-          "malicious": 8
+          "benign": 171,
+          "malicious": 188
+        }
+      },
+      {
+        "accuracy": 0.95,
+        "precision": 0.9581,
+        "recall": 0.9357,
+        "f1": 0.9467,
+        "roc_auc": 0.9853,
+        "pr_auc": 0.988,
+        "confusion_matrix": {
+          "true_negative": 182,
+          "false_positive": 7,
+          "false_negative": 11,
+          "true_positive": 160
+        },
+        "threshold": 0.5,
+        "support": {
+          "benign": 189,
+          "malicious": 171
+        }
+      },
+      {
+        "accuracy": 0.9526,
+        "precision": 0.9722,
+        "recall": 0.9358,
+        "f1": 0.9537,
+        "roc_auc": 0.9774,
+        "pr_auc": 0.9851,
+        "confusion_matrix": {
+          "true_negative": 167,
+          "false_positive": 5,
+          "false_negative": 12,
+          "true_positive": 175
+        },
+        "threshold": 0.5,
+        "support": {
+          "benign": 172,
+          "malicious": 187
         }
       }
     ],
     "fold_std": {
-      "precision": 0.1375,
-      "recall": 0.0589,
-      "f1": 0.0964
+      "precision": 0.0119,
+      "recall": 0.0113,
+      "f1": 0.0064
     }
   },
   "cv_metrics": {
-    "accuracy": 0.8333,
-    "precision": 0.8333,
-    "recall": 0.8333,
-    "f1": 0.8333,
-    "roc_auc": 0.9601,
-    "pr_auc": 0.9647,
+    "accuracy": 0.951,
+    "precision": 0.9623,
+    "recall": 0.9388,
+    "f1": 0.9504,
+    "roc_auc": 0.9803,
+    "pr_auc": 0.9856,
     "confusion_matrix": {
-      "true_negative": 20,
-      "false_positive": 4,
-      "false_negative": 4,
-      "true_positive": 20
+      "true_negative": 866,
+      "false_positive": 33,
+      "false_negative": 55,
+      "true_positive": 843
     },
     "threshold": 0.5,
     "support": {
-      "benign": 24,
-      "malicious": 24
+      "benign": 899,
+      "malicious": 898
     },
-    "n_splits": 3,
+    "n_splits": 5,
     "per_fold": [
       {
-        "accuracy": 0.6875,
-        "precision": 0.6667,
-        "recall": 0.75,
-        "f1": 0.7059,
-        "roc_auc": 0.875,
-        "pr_auc": 0.903,
+        "accuracy": 0.9417,
+        "precision": 0.9435,
+        "recall": 0.9382,
+        "f1": 0.9408,
+        "roc_auc": 0.9821,
+        "pr_auc": 0.9863,
         "confusion_matrix": {
-          "true_negative": 5,
-          "false_positive": 3,
-          "false_negative": 2,
-          "true_positive": 6
+          "true_negative": 172,
+          "false_positive": 10,
+          "false_negative": 11,
+          "true_positive": 167
         },
         "threshold": 0.5,
         "support": {
-          "benign": 8,
-          "malicious": 8
+          "benign": 182,
+          "malicious": 178
         }
       },
       {
-        "accuracy": 0.875,
-        "precision": 0.875,
-        "recall": 0.875,
-        "f1": 0.875,
-        "roc_auc": 0.9844,
-        "pr_auc": 0.9861,
+        "accuracy": 0.961,
+        "precision": 0.9598,
+        "recall": 0.9598,
+        "f1": 0.9598,
+        "roc_auc": 0.9827,
+        "pr_auc": 0.9876,
         "confusion_matrix": {
-          "true_negative": 7,
-          "false_positive": 1,
-          "false_negative": 1,
-          "true_positive": 7
+          "true_negative": 178,
+          "false_positive": 7,
+          "false_negative": 7,
+          "true_positive": 167
         },
         "threshold": 0.5,
         "support": {
-          "benign": 8,
-          "malicious": 8
+          "benign": 185,
+          "malicious": 174
         }
       },
       {
-        "accuracy": 0.9375,
-        "precision": 1.0,
-        "recall": 0.875,
-        "f1": 0.9333,
-        "roc_auc": 0.9844,
-        "pr_auc": 0.9861,
+        "accuracy": 0.9499,
+        "precision": 0.9775,
+        "recall": 0.9255,
+        "f1": 0.9508,
+        "roc_auc": 0.976,
+        "pr_auc": 0.9834,
         "confusion_matrix": {
-          "true_negative": 8,
-          "false_positive": 0,
-          "false_negative": 1,
-          "true_positive": 7
+          "true_negative": 167,
+          "false_positive": 4,
+          "false_negative": 14,
+          "true_positive": 174
         },
         "threshold": 0.5,
         "support": {
-          "benign": 8,
-          "malicious": 8
+          "benign": 171,
+          "malicious": 188
+        }
+      },
+      {
+        "accuracy": 0.95,
+        "precision": 0.9581,
+        "recall": 0.9357,
+        "f1": 0.9467,
+        "roc_auc": 0.9853,
+        "pr_auc": 0.988,
+        "confusion_matrix": {
+          "true_negative": 182,
+          "false_positive": 7,
+          "false_negative": 11,
+          "true_positive": 160
+        },
+        "threshold": 0.5,
+        "support": {
+          "benign": 189,
+          "malicious": 171
+        }
+      },
+      {
+        "accuracy": 0.9526,
+        "precision": 0.9722,
+        "recall": 0.9358,
+        "f1": 0.9537,
+        "roc_auc": 0.9774,
+        "pr_auc": 0.9851,
+        "confusion_matrix": {
+          "true_negative": 167,
+          "false_positive": 5,
+          "false_negative": 12,
+          "true_positive": 175
+        },
+        "threshold": 0.5,
+        "support": {
+          "benign": 172,
+          "malicious": 187
         }
       }
     ],
     "fold_std": {
-      "precision": 0.1375,
-      "recall": 0.0589,
-      "f1": 0.0964
+      "precision": 0.0119,
+      "recall": 0.0113,
+      "f1": 0.0064
     }
   },
   "baseline_metrics": {
-    "accuracy": 0.7708,
-    "precision": 0.8421,
-    "recall": 0.6667,
-    "f1": 0.7442,
-    "roc_auc": 0.9028,
-    "pr_auc": 0.9115,
+    "accuracy": 0.6461,
+    "precision": 0.7323,
+    "recall": 0.4599,
+    "f1": 0.565,
+    "roc_auc": 0.7757,
+    "pr_auc": 0.7191,
     "confusion_matrix": {
-      "true_negative": 21,
-      "false_positive": 3,
-      "false_negative": 8,
-      "true_positive": 16
+      "true_negative": 748,
+      "false_positive": 151,
+      "false_negative": 485,
+      "true_positive": 413
     },
     "threshold": 0.5,
     "support": {
-      "benign": 24,
-      "malicious": 24
+      "benign": 899,
+      "malicious": 898
     },
     "note": "Weighted-sum rules engine with no learning; see analysis/signals.py"
   },
-  "ablation": {},
+  "ablation": {
+    "install_execution": {
+      "f1": 0.9475,
+      "pr_auc": 0.9854,
+      "recall": 0.9343,
+      "precision": 0.9611
+    },
+    "dynamic_execution": {
+      "f1": 0.9474,
+      "pr_auc": 0.9849,
+      "recall": 0.9332,
+      "precision": 0.9621
+    },
+    "process": {
+      "f1": 0.9469,
+      "pr_auc": 0.9855,
+      "recall": 0.9332,
+      "precision": 0.961
+    },
+    "network": {
+      "f1": 0.9504,
+      "pr_auc": 0.9853,
+      "recall": 0.9388,
+      "precision": 0.9623
+    },
+    "credentials": {
+      "f1": 0.9459,
+      "pr_auc": 0.9852,
+      "recall": 0.9343,
+      "precision": 0.9578
+    },
+    "obfuscation": {
+      "f1": 0.9442,
+      "pr_auc": 0.9853,
+      "recall": 0.9321,
+      "precision": 0.9566
+    },
+    "exfiltration": {
+      "f1": 0.9499,
+      "pr_auc": 0.9854,
+      "recall": 0.9399,
+      "precision": 0.9602
+    },
+    "metadata": {
+      "f1": 0.9434,
+      "pr_auc": 0.9832,
+      "recall": 0.9276,
+      "precision": 0.9597
+    },
+    "structure": {
+      "f1": 0.9388,
+      "pr_auc": 0.9834,
+      "recall": 0.931,
+      "precision": 0.9468
+    },
+    "typosquat": {
+      "f1": 0.9486,
+      "pr_auc": 0.9857,
+      "recall": 0.9354,
+      "precision": 0.9622
+    },
+    "aggregate": {
+      "f1": 0.9483,
+      "pr_auc": 0.9843,
+      "recall": 0.9399,
+      "precision": 0.9569
+    }
+  },
   "feature_importances": [
     [
-      "rules_baseline_score",
-      0.389276
+      "has_repository",
+      0.429203
     ],
     [
       "file_count",
-      0.242947
-    ],
-    [
-      "env_access",
-      0.063356
-    ],
-    [
-      "source_file_count",
-      0.05719
-    ],
-    [
-      "dependency_count",
-      0.052996
+      0.247924
     ],
     [
       "total_bytes",
-      0.032729
+      0.045895
+    ],
+    [
+      "rules_baseline_score",
+      0.042716
     ],
     [
       "distinct_signal_types",
-      0.028783
-    ],
-    [
-      "description_length",
-      0.025293
-    ],
-    [
-      "has_empty_description",
-      0.024337
-    ],
-    [
-      "total_signals",
-      0.019633
-    ],
-    [
-      "source_file_ratio",
-      0.019575
+      0.035141
     ],
     [
       "avg_file_bytes",
-      0.016631
+      0.034524
     ],
     [
-      "install_hook_present",
-      0.010685
-    ],
-    [
-      "install_hook_network",
-      0.0065
-    ],
-    [
-      "minified_ratio",
-      0.003093
-    ],
-    [
-      "max_line_length",
-      0.002784
-    ],
-    [
-      "has_repository",
-      0.001558
-    ],
-    [
-      "env_bulk_harvest",
-      0.001154
+      "dependency_count",
+      0.015338
     ],
     [
       "medium_signals",
-      0.000385
-    ],
-    [
-      "parse_failure_ratio",
-      0.000319
-    ],
-    [
-      "host_recon",
-      0.000289
-    ],
-    [
-      "high_signals",
-      0.000227
-    ],
-    [
-      "process_spawn",
-      0.000197
-    ],
-    [
-      "high_entropy_string",
-      5.5e-05
-    ],
-    [
-      "network_access",
-      6e-06
-    ],
-    [
-      "install_hook_count",
-      0.0
-    ],
-    [
-      "dynamic_eval",
-      0.0
-    ],
-    [
-      "critical_signals",
-      0.0
-    ],
-    [
-      "sensitive_path_access",
-      0.0
-    ],
-    [
-      "suspicious_endpoint",
-      0.0
-    ],
-    [
-      "base64_blob",
-      0.0
-    ],
-    [
-      "dynamic_import",
-      0.0
-    ],
-    [
-      "exfil_on_install",
-      0.0
-    ],
-    [
-      "install_hook_shell_pipe",
-      0.0
-    ],
-    [
-      "install_hook_obfuscated",
-      0.0
-    ],
-    [
-      "setup_py_side_effects",
-      0.0
+      0.014505
     ],
     [
       "decode_then_exec",
-      0.0
+      0.013903
+    ],
+    [
+      "max_line_length",
+      0.012604
+    ],
+    [
+      "tiny_package_with_hook",
+      0.011934
+    ],
+    [
+      "parse_failure_ratio",
+      0.011524
+    ],
+    [
+      "process_spawn",
+      0.011238
+    ],
+    [
+      "description_length",
+      0.011
+    ],
+    [
+      "total_signals",
+      0.010645
+    ],
+    [
+      "source_file_ratio",
+      0.007602
+    ],
+    [
+      "source_file_count",
+      0.006213
+    ],
+    [
+      "dynamic_eval",
+      0.005052
+    ],
+    [
+      "typosquat_proximity",
+      0.003303
+    ],
+    [
+      "high_signals",
+      0.00294
+    ],
+    [
+      "env_bulk_harvest",
+      0.002527
+    ],
+    [
+      "network_access",
+      0.002267
+    ],
+    [
+      "minified_ratio",
+      0.002093
     ],
     [
       "shell_execution",
-      0.0
+      0.002015
     ],
     [
-      "reverse_shell",
-      0.0
+      "env_access",
+      0.002008
+    ],
+    [
+      "hex_escape_heavy",
+      0.001873
+    ],
+    [
+      "install_hook_present",
+      0.001564
+    ],
+    [
+      "dns_exfil",
+      0.001539
+    ],
+    [
+      "critical_signals",
+      0.001271
+    ],
+    [
+      "install_hook_count",
+      0.001232
+    ],
+    [
+      "host_recon",
+      0.001222
+    ],
+    [
+      "install_hook_network",
+      0.001199
+    ],
+    [
+      "suspicious_endpoint",
+      0.001198
+    ],
+    [
+      "setup_py_side_effects",
+      0.00102
+    ],
+    [
+      "file_write_sensitive",
+      0.000963
     ],
     [
       "hardcoded_ip",
-      0.0
+      0.000828
+    ],
+    [
+      "string_array_decoder",
+      0.000646
+    ],
+    [
+      "dynamic_import",
+      0.000462
+    ],
+    [
+      "sensitive_path_access",
+      0.000387
+    ],
+    [
+      "has_empty_description",
+      0.00032
     ]
   ],
   "notes": [
@@ -421,6 +564,8 @@
     "All reported figures come from out-of-fold predictions, so no sample was scored by a model that had seen it.",
     "Five registry-only features (age_days, version_count, maintainer_count, is_single_version, is_very_new) are zeroed in training to prevent label leakage \u2014 archived malicious samples have no live registry metadata while benign samples do. See BUILD_LOG D-032.",
     "Malicious samples: DataDog/malicious-software-packages-dataset (Apache-2.0). Benign samples: real packages from the live npm and PyPI registries.",
-    "PR-AUC leads over accuracy: in deployment the class balance is extreme, and a model predicting 'benign' always would score high accuracy while detecting nothing."
+    "PR-AUC leads over accuracy: in deployment the class balance is extreme, and a model predicting 'benign' always would score high accuracy while detecting nothing.",
+    "Structural features (file_count, total_bytes, source_file_count) rank highly because malicious samples are overwhelmingly small single-purpose droppers while popular benign packages are large libraries. This is a real signal, but it is partly a property of the corpus: a large malicious package, or a tiny legitimate utility, sits where the model has little evidence. The behavioural features are what should generalise, and the ablation study measures how much work each family is doing.",
+    "The rules-baseline score is itself one of the 55 features, so the model is a stacked learner over the rules engine rather than an independent alternative to it. The 'model vs. baseline' comparison should therefore be read as 'what the learned layer adds on top of the rules', not as two unrelated detectors competing. The 'aggregate' row of the ablation study measures exactly how much that feature contributes."
   ]
 }

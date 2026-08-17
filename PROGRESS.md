@@ -16,8 +16,8 @@ training) pending the dataset build.
 | 0 | Scaffold: repo, git, venv, deps, docs | ✅ Complete |
 | 1 | Registry layer: npm/PyPI clients, semver, manifests, resolver | ✅ Complete |
 | 2 | Detection engine: AST analysers, signals, features, typosquatting | ✅ Complete |
-| 3 | Dataset pipeline: encoded vault, corpus acquisition | ✅ Complete (1,797 samples stored) |
-| 4 | Train + evaluate classifier | ⏳ Code complete; waiting on feature matrix |
+| 3 | Dataset pipeline: encoded vault, corpus acquisition | ✅ Complete (1,797 samples) |
+| 4 | Train + evaluate classifier | ✅ Complete |
 | 5 | OSV integration + reachability analysis | ✅ Complete |
 | 6 | FastAPI backend + scan orchestration | ✅ Complete |
 | 7 | React + Tailwind dashboard | ✅ Complete |
@@ -29,7 +29,13 @@ training) pending the dataset build.
 
 | Check | Result |
 |---|---|
-| Test suite | 91 passed, fully offline, < 1s |
+| Test suite | 110 passed, fully offline, ~1s |
+| Classifier (grouped 5-fold CV, n=1,797) | **precision 0.962 · recall 0.939 · F1 0.950 · PR-AUC 0.986** |
+| Rules baseline, same data | F1 0.565 · PR-AUC 0.719 — the model adds **+0.385 F1** |
+| Confusion matrix | TP 843 · FP 33 · FN 55 · TN 866 |
+| Demo scan, detector comparison | rules baseline flags 6 packages; trained model flags 1 |
+| Real malware sample (`captcha-py`) | classifier 0.994 |
+| Lint | `ruff` clean across `backend/` and `scripts/` |
 | Demo scan (`demo/vulnerable-app`) | 92 advisories → **3 reachable, 97% ruled out** |
 | Reachability proof path | `app → app.main → app.bootstrap → config.load_settings → yaml.load` |
 | Remediation ordering | `pyyaml` (3 reachable fixes) ranked above `pillow` (56 fixes, 0 reachable) |
@@ -56,21 +62,18 @@ training) pending the dataset build.
 
 ## Remaining work
 
-1. **Train the classifier.** The dataset build is the long pole. Once
-   `data/corpus/features.csv` exists:
+**None blocking.** All eight phases are complete and the system is fully
+demonstrable. Optional polish, in rough order of value:
 
-   ```
-   python scripts/train_model.py
-   ```
-
-   This writes the model, model card, and six evaluation charts to `data/models/`.
-   The dashboard's **Model & evaluation** tab reads them automatically.
-
-2. **Optional polish** if time allows: HTML/PDF report export, and wiring the
-   (already-written, disabled-by-default) LLM explanation layer into the UI.
-
-Everything else is done. The system is demonstrable now — it falls back to the
-rules baseline and says so in every result.
+1. **Grow the curated vulnerable-symbol table.** It currently covers ~35
+   packages, which is why many advisories resolve to `ASSUMED_REACHABLE` rather
+   than a precise verdict. Every entry added sharpens the headline result.
+2. **Reduce the 55 false negatives** — inspect which malicious samples the model
+   misses and look for a signal family that would catch them.
+3. **npm symbol-level reachability**, currently import-level only. This is the
+   largest genuine gap and is a research problem, not an afternoon's work.
+4. **PDF export.** The HTML report already prints cleanly, so this is
+   convenience rather than capability.
 
 ---
 

@@ -146,6 +146,17 @@ python -m chainguard scan-package reqeusts --ecosystem PyPI
 
 Open the **Model & evaluation** tab.
 
+**The headline numbers**, from grouped 5-fold CV over 1,797 real packages:
+precision **0.962**, recall **0.939**, F1 **0.950**, PR-AUC **0.986** — against a
+rules baseline of F1 **0.565**.
+
+**The most persuasive single demonstration** is the before/after on the demo
+project. The rules baseline flags six packages (`pillow`, `requests`, `lxml`,
+`urllib3`, `flask`, `jinja2`); the trained model flags **one**. Large mature
+libraries genuinely do call `eval`, spawn processes and read config paths — the
+model has learned that this is unremarkable at that scale, and a weighted-sum
+rules engine cannot.
+
 **Point at:**
 
 - **Precision / recall / F1 / PR-AUC**, with fold standard deviations.
@@ -154,7 +165,11 @@ Open the **Model & evaluation** tab.
 - **Model vs. rules baseline.** The baseline is a weighted-sum rules engine over
   the same signals, scored on the same data. Without this comparison, "we used
   machine learning" would be an assertion rather than a result.
-- **Ablation chart** — what breaks when each signal family is removed.
+- **Ablation chart** — and say the honest thing about it: no single family is
+  load-bearing (the largest loss is 0.012 F1). A malicious package usually trips
+  several families at once, so removing one leaves the others to compensate.
+  That is good robustness, and it also means the ablation shows there *isn't* a
+  single decisive feature group rather than identifying one.
 
 **Then state the methodology unprompted**, because it is the strongest thing to
 volunteer:
@@ -172,8 +187,19 @@ volunteer:
 
 **"Is this trained on real malware?"**
 Yes — 898 real malicious packages from DataDog's published research dataset
-(Apache-2.0), samples that were genuinely caught attacking users. They are stored
+(Apache-2.0), samples that were genuinely caught attacking users, balanced
+against 899 real packages downloaded live from npm and PyPI. They are stored
 encoded on disk and never executed.
+
+**"How do you know the model isn't just memorising the dataset?"**
+Splits are grouped by package name, so no version of a package can appear on
+both sides, and every reported figure is out-of-fold. There are 1,796 distinct
+package families across 1,797 samples.
+
+**"Are there false negatives?"**
+55 of 898 malicious samples were missed. That is the number that matters most,
+and it is on the model card rather than buried — a wrongly flagged package costs
+a developer minutes, a missed one ships malware.
 
 **"Isn't running malware on your laptop dangerous?"**
 Nothing is ever executed. All analysis is static parsing of source text — no

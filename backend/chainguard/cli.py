@@ -325,6 +325,8 @@ def scan_sample(
         console.print(f"[red]Sample '{name}' could not be decoded.[/red]")
         raise typer.Exit(1)
 
+    from chainguard.ml.model import MalwareClassifier
+
     with console.status(f"[cyan]Analysing {match.name}@{match.version}..."):
         analysis = analyse_sample(match, payload)
 
@@ -332,11 +334,19 @@ def scan_sample(
         console.print(f"[yellow]Sample '{name}' contained no analysable files.[/yellow]")
         raise typer.Exit(1)
 
+    # Score with the trained classifier as well as the rules baseline, so the
+    # demo shows both detectors on the same real sample and the comparison the
+    # evaluation claims can be seen directly rather than taken on trust.
+    prediction = MalwareClassifier.load().predict(analysis.features, analysis.rules_score)
+
     console.print()
     console.print(
         Panel(
             f"[bold]{match.name}@{match.version}[/bold]  ({match.ecosystem})\n"
-            f"Rules score: [bold red]{analysis.rules_score:.3f}[/bold red]  ·  "
+            f"Classifier: [bold red]{prediction.probability:.3f}[/bold red] "
+            f"([{_VERDICT_COLOURS.get(prediction.verdict, '')}]{prediction.verdict}[/], "
+            f"via {prediction.source})   "
+            f"Rules baseline: [red]{analysis.rules_score:.3f}[/red]\n"
             f"{len(analysis.signals)} signals  ·  {analysis.files_analysed} files\n"
             f"[dim]Source: {match.source}[/dim]",
             title="Real malicious sample",
