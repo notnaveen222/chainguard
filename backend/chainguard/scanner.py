@@ -134,6 +134,18 @@ class PackageFinding(BaseModel):
         return self.verdict in ("malicious", "suspicious")
 
     @property
+    def was_analysed(self) -> bool:
+        """False if this package was never actually inspected.
+
+        A package that could not be downloaded — removed from the registry,
+        yanked, a broken distribution — has no signals and therefore scores 0.0,
+        which is indistinguishable from a clean result unless it is tracked
+        separately. Taken-down typosquats are exactly this case, so the
+        distinction matters precisely where the tool is most useful.
+        """
+        return self.analysis_error is None and self.files_analysed > 0
+
+    @property
     def reachable_vulnerabilities(self) -> list[VulnerabilityFinding]:
         return [v for v in self.vulnerabilities if v.reachable]
 
@@ -151,6 +163,14 @@ class ScanSummary(BaseModel):
 
     malicious_packages: int = 0
     suspicious_packages: int = 0
+    unanalysed_packages: int = Field(
+        default=0,
+        description=(
+            "Packages that could not be inspected at all — download failed, "
+            "removed from the registry, or an empty distribution. These are NOT "
+            "clean results and are reported separately."
+        ),
+    )
 
     total_vulnerabilities: int = 0
     reachable_vulnerabilities: int = 0
@@ -704,6 +724,18 @@ def _summarise(result: ScanResult) -> None:
     summary.max_depth = max((p.depth for p in result.packages), default=0)
     summary.malicious_packages = sum(1 for p in result.packages if p.verdict == "malicious")
     summary.suspicious_packages = sum(1 for p in result.packages if p.verdict == "suspicious")
+    summary.unanalysed_packages = sum(1 for p in result.packages if not p.was_analysed)
+
+    # Surface unanalysed packages as a scan warning too, so they cannot be missed
+    # by a caller that only reads warnings.
+    unanalysed = [p for p in result.packages if not p.was_analysed]
+    if unanalysed:
+        names = ", ".join(f"{p.name}@{p.version}" for p in unanalysed[:5])
+        more = f" and {len(unanalysed) - 5} more" if len(unanalysed) > 5 else ""
+        result.warnings.append(
+            f"{len(unanalysed)} package(s) could not be inspected and are NOT "
+            f"confirmed clean: {names}{more}"
+        )
 
     for vulnerability in result.all_vulnerabilities():
         summary.total_vulnerabilities += 1

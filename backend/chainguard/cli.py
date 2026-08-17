@@ -85,8 +85,27 @@ def _render(result: ScanResult, *, show_all: bool = False) -> None:
                 evidence or "-",
             )
         console.print(table)
-    else:
+    elif summary.unanalysed_packages < summary.total_packages:
         console.print("[green]No packages were flagged as malicious or suspicious.[/green]")
+
+    # Reported before anything else reassuring: a package that could not be
+    # downloaded scores 0.0 and would otherwise read as clean. Taken-down
+    # typosquats land here, which is exactly where a false all-clear hurts.
+    unanalysed = [p for p in result.packages if not p.was_analysed]
+    if unanalysed:
+        table = Table(
+            title="Not inspected — NOT confirmed clean",
+            title_style="bold yellow",
+            header_style="bold",
+        )
+        table.add_column("Package")
+        table.add_column("Reason")
+        for package in unanalysed[:12]:
+            table.add_row(
+                f"{package.name}@{package.version}",
+                package.analysis_error or "No analysable files in the distribution",
+            )
+        console.print(table)
 
     # --- vulnerabilities ---------------------------------------------------- #
     if summary.total_vulnerabilities:
@@ -251,6 +270,97 @@ def scan_package(
             console.print(f"            {signal.location}")
             if signal.detail:
                 console.print(f"            [dim]{signal.detail}[/dim]")
+
+
+@app.command("scan-sample")
+def scan_sample(
+    name: Optional[str] = typer.Argument(None, help="Sample name; omit to list what is stored"),
+    limit: int = typer.Option(15, "--limit", help="How many samples to list"),
+) -> None:
+    """Analyse a real malicious package from the local quarantine vault.
+
+    Live typosquats are removed from the registries within days of being
+    reported, so `scan-package reqeusts` finds nothing — the package is gone.
+    This command analyses the archived research samples instead, which is both a
+    more reliable demonstration and a more honest one: these are packages that
+    genuinely attacked users.
+
+    The sample is decoded into memory and parsed. It is never executed.
+    """
+    setup_logging("WARNING")
+
+    from chainguard.dataset.corpus import analyse_sample
+    from chainguard.dataset.vault import SampleVault
+
+    vault = SampleVault()
+    records = [r for r in vault.records() if r.label == "malicious"]
+
+    if not records:
+        console.print(
+            "[yellow]No samples in the vault.[/yellow] Build the dataset first:\n"
+            "  python scripts/build_dataset.py"
+        )
+        raise typer.Exit(1)
+
+    if not name:
+        table = Table(title=f"Malicious samples in the vault ({len(records)} total)",
+                      header_style="bold")
+        table.add_column("Name")
+        table.add_column("Version")
+        table.add_column("Ecosystem")
+        for record in records[:limit]:
+            table.add_row(record.name, record.version, record.ecosystem)
+        console.print(table)
+        console.print(f"\n[dim]Analyse one with:  python -m chainguard scan-sample "
+                      f"{records[0].name}[/dim]")
+        return
+
+    match = next((r for r in records if r.name.lower() == name.lower()), None)
+    if match is None:
+        console.print(f"[red]No sample named '{name}' in the vault.[/red]")
+        raise typer.Exit(1)
+
+    payload = vault.get(match.sample_id)
+    if payload is None:
+        console.print(f"[red]Sample '{name}' could not be decoded.[/red]")
+        raise typer.Exit(1)
+
+    with console.status(f"[cyan]Analysing {match.name}@{match.version}..."):
+        analysis = analyse_sample(match, payload)
+
+    if analysis is None:
+        console.print(f"[yellow]Sample '{name}' contained no analysable files.[/yellow]")
+        raise typer.Exit(1)
+
+    console.print()
+    console.print(
+        Panel(
+            f"[bold]{match.name}@{match.version}[/bold]  ({match.ecosystem})\n"
+            f"Rules score: [bold red]{analysis.rules_score:.3f}[/bold red]  ·  "
+            f"{len(analysis.signals)} signals  ·  {analysis.files_analysed} files\n"
+            f"[dim]Source: {match.source}[/dim]",
+            title="Real malicious sample",
+            border_style="red",
+        )
+    )
+
+    from chainguard.llm.explain import local_explanation
+
+    explanation = local_explanation(
+        match.name, match.version, "malicious", analysis.top_signals(12),
+        analysis.typosquat_target,
+    )
+    console.print(f"\n{explanation.text}\n")
+
+    for signal in analysis.top_signals(12):
+        colour = _SEVERITY_COLOURS.get(signal.severity.value.upper(), "")
+        count = f" (x{signal.occurrences})" if signal.occurrences > 1 else ""
+        console.print(f"  [{colour}]{signal.severity.value:9}[/] {signal.code}{count}")
+        console.print(f"            [dim]{signal.location}[/dim]")
+        if signal.detail:
+            console.print(f"            {signal.detail}")
+        if signal.evidence:
+            console.print(f"            [yellow]{signal.evidence[:110]}[/yellow]")
 
 
 @app.command("version")

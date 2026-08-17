@@ -333,6 +333,7 @@ function ScanResult({ result }) {
       <ReachabilityHeadline summary={summary} />
 
       {flagged.length > 0 && <FlaggedPackages packages={flagged} />}
+      <UnanalysedPackages packages={result.packages || []} />
       <VulnerabilityTable vulnerabilities={result.packages?.flatMap((p) => p.vulnerabilities || []) || []} />
       {result.remediation?.length > 0 && <RemediationPlan actions={result.remediation} />}
 
@@ -448,6 +449,42 @@ function FlaggedPackages({ packages }) {
             </div>
           )
         })}
+      </div>
+    </Card>
+  )
+}
+
+/**
+ * Packages that could not be inspected.
+ *
+ * These score 0.0 and would otherwise sit silently among the clean results,
+ * which is the one place a false all-clear really matters: a typosquat that has
+ * since been taken down from the registry lands here.
+ */
+function UnanalysedPackages({ packages }) {
+  const unanalysed = packages.filter((p) => p.analysis_error || !p.files_analysed)
+  if (!unanalysed.length) return null
+
+  return (
+    <Card
+      title="Not inspected"
+      subtitle="These packages could not be downloaded or contained no analysable files — they are not confirmed clean"
+      right={<Badge tone="MODERATE">{unanalysed.length}</Badge>}
+    >
+      <div className="space-y-2">
+        {unanalysed.slice(0, 15).map((pkg) => (
+          <div
+            key={`${pkg.name}@${pkg.version}`}
+            className="flex flex-wrap items-center gap-3 px-3 py-2 rounded-lg border border-amber-900/50 bg-amber-950/20"
+          >
+            <span className="font-mono text-sm text-ink-200">
+              {pkg.name}@{pkg.version}
+            </span>
+            <span className="text-xs text-amber-300/80">
+              {pkg.analysis_error || 'No analysable files in the distribution'}
+            </span>
+          </div>
+        ))}
       </div>
     </Card>
   )

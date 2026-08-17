@@ -48,20 +48,50 @@ Open <http://localhost:5173>.
 
 ## 2. Malicious package detection (2 minutes)
 
-In the dashboard, choose **Single package**, and scan a known typosquat name:
+Use a **real** malicious package from the research dataset. Live typosquats are
+removed from the registries within days of being reported, so scanning one by
+name finds nothing — the package is gone. The archived samples are both more
+reliable to demo and more honest: these genuinely attacked users.
 
-- Package: `reqeusts` · Ecosystem: `PyPI`
+```bash
+python -m chainguard scan-sample captcha-py
+```
 
-**Point at:** the verdict, then expand the package to show the evidence list.
+**Point at:**
 
-**The point to make:** every verdict carries the file, line and source snippet
-that produced it. Ask the panel to note that this is auditable — the score is not
-a black box.
+- Score **1.000**, 20 signals, and the sample's provenance line
+  (`DataDog/malicious-software-packages-dataset, Apache-2.0`).
+- The evidence, which tells the whole story of the attack in four lines:
+  **MetaMask extension ID**, **browser credential store** (`/Login Data`),
+  **Discord webhook**, and all of it in `setup.py` — so it runs on
+  `pip install`, before the developer executes anything.
+- The two **composite** signals: `EXFIL_CREDENTIALS_TO_NETWORK` and
+  `EXFIL_ON_INSTALL`. Make the point that reading credentials is unremarkable
+  and making a network call is unremarkable — *doing both in one file* is what
+  makes it conclusive, and no individual detector can see that.
 
-Then run a legitimate package (`requests`, `express`) to show it is *not* flagged.
+To browse what else is in the vault:
+
+```bash
+python -m chainguard scan-sample
+```
+
+**Say this:** the samples are stored encoded on disk and decoded into memory
+only. Nothing is ever executed — all analysis is static parsing.
+
+Then scan a legitimate package to show it is *not* flagged:
+
+```bash
+python -m chainguard scan-package express --ecosystem npm
+```
 
 > **If asked "does it just look for known bad names?"** — no. Name similarity is
 > 4 of 55 features. Show the Model tab's feature-importance chart.
+
+> **If asked to scan a live typosquat** — try it (`scan-package reqeusts`). It
+> reports **"Not inspected — NOT confirmed clean"**, because the package has been
+> taken down. That is deliberate: a package that could not be downloaded scores
+> zero, and reporting that as clean would be the most dangerous possible output.
 
 ---
 
