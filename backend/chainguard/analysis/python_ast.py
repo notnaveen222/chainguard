@@ -165,7 +165,18 @@ class _PythonVisitor(ast.NodeVisitor):
 
     def visit_Import(self, node: ast.Import) -> None:
         for alias in node.names:
-            self.aliases[alias.asname or alias.name.split(".")[0]] = alias.name
+            if alias.asname:
+                # `import urllib.request as ur` binds `ur` to the full path.
+                self.aliases[alias.asname] = alias.name
+            else:
+                # `import urllib.request` binds only the ROOT name `urllib`;
+                # `request` is then reached by attribute access. Mapping the root
+                # to the full dotted path instead would make `urllib.request.
+                # urlopen` resolve to `urllib.request.request.urlopen` and match
+                # no sink at all — which silently disabled network detection for
+                # every dotted import.
+                root = alias.name.split(".")[0]
+                self.aliases[root] = root
         self.generic_visit(node)
 
     def visit_ImportFrom(self, node: ast.ImportFrom) -> None:

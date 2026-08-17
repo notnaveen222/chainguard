@@ -475,7 +475,14 @@ class _ScopeCollector(ast.NodeVisitor):
 
     def visit_Import(self, node: ast.Import) -> None:
         for alias in node.names:
-            self.aliases[alias.asname or alias.name.split(".")[0]] = alias.name
+            if alias.asname:
+                self.aliases[alias.asname] = alias.name
+            else:
+                # `import urllib.request` binds only `urllib`. See the matching
+                # note in analysis/python_ast.py — mapping the root name to the
+                # full dotted path duplicates the submodule on resolution.
+                root = alias.name.split(".")[0]
+                self.aliases[root] = root
         self.generic_visit(node)
 
     def visit_ImportFrom(self, node: ast.ImportFrom) -> None:

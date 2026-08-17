@@ -172,6 +172,11 @@ class JobRegistry:
 
         try:
             result: ScanResult = await run(scanner)
+
+            # The scanner mints its own id, but the client already holds the
+            # job's. Reconcile them before persisting, otherwise a scan is stored
+            # under an id nobody can look up once the in-memory job expires.
+            result.scan_id = job.scan_id
             job.result = result
             job.status = "completed" if result.status != "failed" else "failed"
             job.progress = 1.0
