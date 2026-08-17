@@ -84,8 +84,27 @@ class AnalysisResult(BaseModel):
         return [s for s in self.signals if s.severity is Severity.CRITICAL]
 
     def top_signals(self, limit: int = 10) -> list[Signal]:
-        """Signals ordered by severity, for display."""
-        return sorted(self.signals, key=lambda s: -s.severity.rank)[:limit]
+        """Distinct signals ordered by severity, for display.
+
+        Collapsed by code, keeping the highest-severity occurrence and recording
+        how many times it fired. A large package can trigger the same signal in
+        a dozen files — `pillow` produces twelve `DYNAMIC_EVAL` hits — and twelve
+        near-identical rows crowd out every other kind of evidence in a report.
+
+        Only the display is affected. Feature extraction reads ``self.signals``,
+        the uncollapsed list, so per-occurrence counts still reach the model.
+        """
+        collapsed: dict[str, Signal] = {}
+        for signal in sorted(self.signals, key=lambda s: -s.severity.rank):
+            existing = collapsed.get(signal.code)
+            if existing is None:
+                collapsed[signal.code] = signal.model_copy(update={"occurrences": 1})
+            else:
+                existing.occurrences += 1
+
+        return sorted(
+            collapsed.values(), key=lambda s: (-s.severity.rank, -s.occurrences)
+        )[:limit]
 
 
 def _should_skip(path: str) -> bool:

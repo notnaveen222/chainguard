@@ -386,6 +386,20 @@ function FlaggedPackages({ packages }) {
 
               {open && (
                 <div className="px-4 pb-4 pt-1 border-t border-ink-800 bg-ink-950/60">
+                  {pkg.explanation && (
+                    <div className="mb-3 pt-3">
+                      <p className="text-xs uppercase tracking-wide text-ink-500 mb-1.5">
+                        Assessment
+                        <span className="ml-2 normal-case text-ink-600">
+                          ({pkg.explanation_source === 'llm'
+                            ? 'written by Claude'
+                            : 'generated locally'})
+                        </span>
+                      </p>
+                      <p className="text-sm text-ink-300 leading-relaxed">{pkg.explanation}</p>
+                    </div>
+                  )}
+
                   {pkg.top_contributors?.length > 0 && (
                     <div className="mb-3">
                       <p className="text-xs uppercase tracking-wide text-ink-500 mb-1.5">
@@ -408,9 +422,13 @@ function FlaggedPackages({ packages }) {
                         <div className="flex items-center gap-2 flex-wrap">
                           <Badge tone={signal.severity}>{signal.severity}</Badge>
                           <span className="font-mono text-ink-200 text-xs">{signal.code}</span>
+                          {signal.occurrences > 1 && (
+                            <span className="text-xs text-ink-500">×{signal.occurrences}</span>
+                          )}
                           {signal.file && (
                             <span className="text-xs text-ink-500 font-mono">
                               {signal.file}{signal.line ? `:${signal.line}` : ''}
+                              {signal.occurrences > 1 && ' and elsewhere'}
                             </span>
                           )}
                         </div>

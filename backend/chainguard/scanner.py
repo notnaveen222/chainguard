@@ -33,6 +33,7 @@ from pydantic import BaseModel, Field
 from chainguard.analysis.engine import analyse_package
 from chainguard.analysis.signals import Severity, Signal
 from chainguard.config import get_settings
+from chainguard.llm.explain import explain_package
 from chainguard.logging_setup import get_logger
 from chainguard.ml.model import MalwareClassifier
 from chainguard.models.package import (
@@ -114,6 +115,13 @@ class PackageFinding(BaseModel):
     signals: list[Signal] = Field(default_factory=list)
     top_contributors: list[tuple[str, float]] = Field(default_factory=list)
     typosquat_target: Optional[str] = None
+
+    #: Prose summary of the verdict. Generated locally by default; upgraded to an
+    #: LLM-written explanation only when that layer is enabled and reachable.
+    #: ``explanation_source`` records which, so the UI never presents a templated
+    #: sentence as model-generated analysis or vice versa.
+    explanation: Optional[str] = None
+    explanation_source: str = "local"
 
     # Known vulnerabilities
     vulnerabilities: list[VulnerabilityFinding] = Field(default_factory=list)
@@ -392,6 +400,7 @@ class Scanner:
                 finding.vulnerabilities = _dedupe_vulnerabilities(
                     [_to_finding(v, ref, None) for v in advisories.get(ref.key, [])]
                 )
+            _explain_flagged(findings)
 
         result.model_source = "model" if self.classifier.is_trained else "rules-baseline"
         _summarise(result)
@@ -492,6 +501,11 @@ class Scanner:
 
         for finding in findings:
             finding.vulnerabilities = _dedupe_vulnerabilities(finding.vulnerabilities)
+
+        # Explanations only for packages a human will actually look at. Writing
+        # prose for 700 clean dependencies would be wasted work, and with the LLM
+        # layer enabled it would be wasted spend too.
+        _explain_flagged(findings)
 
         result.stage_timings["reach"] = time.time() - stage_start
         result.model_source = "model" if self.classifier.is_trained else "rules-baseline"
@@ -611,6 +625,29 @@ def _to_finding(
         for step in reachability.call_path
     ]
     return finding
+
+
+def _explain_flagged(findings: list[PackageFinding], limit: int = 25) -> None:
+    """Attach a prose explanation to each flagged package.
+
+    Falls back to a deterministic local summary whenever the LLM layer is
+    disabled or unavailable, which is the default configuration.
+    """
+    flagged = sorted(
+        (f for f in findings if f.is_flagged), key=lambda f: -f.malice_score
+    )[:limit]
+
+    for finding in flagged:
+        try:
+            explanation = explain_package(
+                finding.name, finding.version, finding.ecosystem,
+                finding.verdict, finding.malice_score, finding.signals,
+                finding.typosquat_target,
+            )
+            finding.explanation = explanation.text
+            finding.explanation_source = explanation.source
+        except Exception as exc:  # noqa: BLE001 — cosmetic feature, never fatal
+            logger.debug("Could not build an explanation for %s: %s", finding.name, exc)
 
 
 _SEVERITY_RANK = {"CRITICAL": 4, "HIGH": 3, "MODERATE": 2, "MEDIUM": 2, "LOW": 1, "UNKNOWN": 0}

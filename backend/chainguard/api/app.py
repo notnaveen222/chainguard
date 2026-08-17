@@ -18,7 +18,7 @@ from typing import Any, Optional
 
 from fastapi import FastAPI, HTTPException, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import JSONResponse
+from fastapi.responses import HTMLResponse, JSONResponse
 from pydantic import BaseModel, Field
 
 from chainguard import __version__
@@ -304,6 +304,31 @@ async def scan_result(scan_id: str) -> dict[str, Any]:
             content={"scan_id": scan_id, "status": job.status, "message": job.message},
         )
     raise HTTPException(404, f"No scan with id {scan_id}")
+
+
+@app.get("/api/scans/{scan_id}/report", tags=["scans"], response_class=HTMLResponse)
+async def scan_report(scan_id: str) -> HTMLResponse:
+    """Render a completed scan as a self-contained HTML report.
+
+    Served inline rather than as a download so it can be viewed in a tab and
+    printed to PDF from the browser.
+    """
+    from chainguard.reporting.html import render_report
+    from chainguard.scanner import ScanResult
+
+    job = registry.get(scan_id)
+    result = job.result if job is not None else None
+
+    if result is None:
+        stored = load_scan(scan_id)
+        if stored is None:
+            raise HTTPException(404, f"No completed scan with id {scan_id}")
+        try:
+            result = ScanResult.model_validate(stored)
+        except Exception as exc:  # noqa: BLE001
+            raise HTTPException(500, f"Stored scan could not be rendered: {exc}") from exc
+
+    return HTMLResponse(content=render_report(result))
 
 
 @app.get("/api/scans", tags=["scans"])

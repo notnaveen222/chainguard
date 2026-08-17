@@ -98,6 +98,13 @@ class Signal(BaseModel):
     detail: Optional[str] = Field(
         default=None, description="Human-readable explanation of this occurrence."
     )
+    occurrences: int = Field(
+        default=1,
+        description=(
+            "How many times this signal code fired, set when signals are collapsed "
+            "for display. Always 1 on the raw signals used for feature extraction."
+        ),
+    )
 
     @property
     def location(self) -> str:
