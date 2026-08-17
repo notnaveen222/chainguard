@@ -125,7 +125,14 @@ def local_explanation(
             f"typo attacks."
         )
 
-    install_signals = [s for s in ranked if s.category.value == "install_hook"]
+    # Install-time behaviour is worth calling out separately, because it runs
+    # before the developer has invoked anything. It is not confined to the
+    # install_hook category — EXFIL_ON_INSTALL and SETUP_PY_SIDE_EFFECTS describe
+    # the same timing while being categorised by what they do.
+    install_signals = [
+        s for s in ranked
+        if s.category.value == "install_hook" or "INSTALL" in s.code or "SETUP_PY" in s.code
+    ]
     if install_signals:
         sentences.append(
             "Some of this behaviour runs automatically at install time, before "
