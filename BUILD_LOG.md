@@ -631,7 +631,104 @@ overstates its own certainty is worse than one that admits a gap.
 
 ---
 
+## 2026-08-18 — Hardening, and the bugs testing found
+
+### D-046 — A single file could hang the analyser indefinitely
+
+The dataset build pegged one CPU and stopped making progress. The per-package
+analysis timeout is checked *between* files, so it cannot interrupt one long
+parse — and `esprima` is pure Python with steeply superlinear cost on large
+minified bundles, so a single 2 MB one-line file spins for many minutes.
+
+This is a denial of service on a component whose entire purpose is ingesting
+hostile input. Windows has no signal-based alarm, so the limit has to be applied
+*before* parsing starts: AST parsing is now skipped above 1 MB (300 KB for
+minified files), falling back to text scanning with `parse_failed` set so the
+feature vector reflects reduced visibility rather than reporting the file clean.
+
+### D-047 — `import urllib.request` broke every dotted import
+
+Found while writing tests. `visit_Import` bound the alias `urllib` →
+`urllib.request`, so resolving `urllib.request.urlopen` produced
+`urllib.request.request.urlopen` and matched no sink. Network and process
+detection were silently blind to any dotted import.
+
+The correct semantics: `import a.b` binds only the root name `a`; the submodule
+is reached by attribute access. Only `import a.b as ab` binds the full path. The
+same defect was present in the reachability collector and was fixed in both.
+
+### D-048 — Advisories were double-counted
+
+OSV aggregates several databases, so one flaw commonly arrives twice — once as a
+GHSA record with a CVSS vector, once as a PyPA or npm advisory without one.
+Different OSV ids, same CVE alias. The demo project listed CVE-2019-20477 twice,
+as `CRITICAL 9.8` and again as `UNKNOWN`.
+
+Since this project's headline claim is a *ratio* between reported and reachable
+advisories, duplicates distort the central result directly. Findings are now
+merged per CVE, keeping the most informative record. The demo figure corrected
+from "180 → 6" to **"92 → 3"**; the 97% reduction ratio is unchanged, and the
+counts are now honest.
+
+### D-049 — An uninspected package must never read as clean
+
+**The most consequential reporting bug found.**
+
+Testing `scan-package reqeusts` printed *"No packages were flagged"*. But
+`reqeusts` was taken down from PyPI years ago — it was never analysed at all. A
+package that cannot be downloaded has no signals, so it scores 0.0 and sat
+silently among the clean results.
+
+That is a false all-clear in precisely the situation where the tool is most
+useful: a typosquat someone is asking about is *likely* to have been removed.
+
+Packages with a download error or zero analysable files are now tracked as
+unanalysed, counted in the summary, raised as a scan warning, and given their own
+section in both the CLI and the dashboard, headed **"Not inspected — NOT
+confirmed clean"**.
+
+### D-050 — `scan-sample`: demo against real malware, not synthetic
+
+Because live typosquats disappear within days, the malicious-detection demo
+needed a reliable subject. `chainguard scan-sample` analyses a package from the
+local vault — decoded into memory, never executed.
+
+On `captcha-py` the evidence tells the entire attack in four lines: a MetaMask
+extension ID, the browser credential store (`/Login Data`), a Discord webhook,
+and all of it in `setup.py` so it runs on `pip install`. Both composite signals
+fire. That is a far stronger demonstration than a synthetic sample, and it is
+real.
+
+### D-051 — Model reloads when the artifact changes
+
+Loading the model once at startup is the obvious design and is wrong for this
+tool's workflow: the API is normally already running when `train_model.py` writes
+a model for the first time, so the API would keep reporting "no model trained"
+until restarted — during a demo, that looks like training failed.
+
+### D-052 — Lint exceptions are documented, not scattered
+
+`ruff` passes clean. The remaining exceptions live in `pyproject.toml` with
+reasons rather than as scattered `noqa` comments. Notably, every `zip()` was
+reviewed individually: all pair sequences of equal length by construction, except
+OSV's batch endpoint, where a short response could genuinely drop packages —
+that one is checked and logged explicitly rather than left to `strict=True` to
+crash a scan.
+
+Three `assert`s in non-test code were replaced with real guards. Asserts are
+stripped under `python -O`, which would have converted a clean HTTP 400 and two
+caught "not analysed" verdicts into `AttributeError`s mid-scan.
+
+### D-053 — Scan history showed the wrong time
+
+SQLite has no timezone-aware column type, so UTC timestamps came back naive and
+serialised without an offset; the browser read them as local time and a scan run
+at 01:14 displayed as 7:44 PM. UTC is re-attached on serialisation.
+
+---
+
 <!-- New entries are appended below as work proceeds. -->
+
 
 
 
