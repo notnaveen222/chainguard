@@ -1,0 +1,42 @@
+# ChainGuard — backend dependencies
+# Pinned to compatible ranges for reproducibility (Python 3.10+).
+
+# --- Web / API ---------------------------------------------------------------
+fastapi==0.115.6
+uvicorn[standard]==0.34.0
+python-multipart==0.0.20
+pydantic==2.10.4
+pydantic-settings==2.7.0
+
+# --- HTTP --------------------------------------------------------------------
+httpx==0.28.1
+tenacity==9.0.0
+
+# --- Data / ML ---------------------------------------------------------------
+numpy==1.26.4
+pandas==2.2.3
+scikit-learn==1.5.2
+joblib==1.4.2
+matplotlib==3.9.4
+
+# --- Package ecosystem parsing ----------------------------------------------
+packaging==24.2
+esprima==4.0.1            # pure-Python JS parser for npm static analysis
+
+# --- Storage -----------------------------------------------------------------
+sqlalchemy==2.0.36
+
+# --- Reporting ---------------------------------------------------------------
+jinja2==3.1.5
+
+# --- Optional LLM layer (disabled by default; see chainguard/llm/) ------------
+anthropic==0.42.0
+
+# --- CLI / UX ----------------------------------------------------------------
+typer==0.15.1
+rich==13.9.4
+
+# --- Testing -----------------------------------------------------------------
+pytest==8.3.4
+pytest-asyncio==0.25.0
+respx==0.22.0

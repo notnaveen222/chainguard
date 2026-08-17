@@ -1,0 +1,30 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "chainguard"
+version = "0.1.0"
+description = "AI-powered software supply chain security: malicious package detection and vulnerability reachability analysis"
+readme = "README.md"
+requires-python = ">=3.10"
+
+[tool.setuptools.packages.find]
+where = ["backend"]
+include = ["chainguard*"]
+
+[tool.pytest.ini_options]
+testpaths = ["backend/tests"]
+pythonpath = ["backend"]
+asyncio_mode = "auto"
+filterwarnings = ["ignore::DeprecationWarning"]
+
+[tool.ruff]
+line-length = 100
+target-version = "py310"
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "B", "UP", "S"]
+# S603/S607: subprocess warnings — ChainGuard never spawns analysed code, and the
+# only subprocess use is invoking the local npm CLI for lockfile resolution.
+ignore = ["S603", "S607"]

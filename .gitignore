@@ -1,0 +1,49 @@
+# ---------------------------------------------------------------------------
+# ChainGuard — ignore rules
+# ---------------------------------------------------------------------------
+
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+venv/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+htmlcov/
+
+# Node / frontend
+node_modules/
+frontend/dist/
+frontend/.vite/
+npm-debug.log*
+
+# ---------------------------------------------------------------------------
+# Data directories.
+#
+# SECURITY: data/quarantine/ holds malicious package samples used to train the
+# classifier. They are stored ENCODED at rest (never as runnable source) and are
+# never executed by this project — but they must never be committed either.
+# See docs/DATASET.md and data/quarantine/README.md.
+# ---------------------------------------------------------------------------
+data/quarantine/
+data/cache/
+data/corpus/
+data/reports/
+data/models/*.joblib
+data/models/*.pkl
+!data/quarantine/README.md
+!data/models/.gitkeep
+
+# Local config / secrets
+.env
+.env.*
+!.env.example
+
+# Editors / OS
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
