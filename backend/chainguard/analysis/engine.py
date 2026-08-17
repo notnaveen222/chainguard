@@ -211,7 +211,12 @@ def _metadata_signals(
             )
         )
 
-    if metadata.version_count <= 1:
+    # A count of 0 means "unknown", not "one version". Registry metadata always
+    # reports at least 1, so 0 only occurs when metadata was reconstructed from
+    # inside an archive — as it is for every sample during dataset construction.
+    # Emitting the signal there would fire it on 100% of both classes, adding
+    # noise to the aggregate counts while carrying no information.
+    if metadata.version_count == 1:
         signals.append(
             make_signal("SINGLE_VERSION", detail="Only one version has ever been published")
         )

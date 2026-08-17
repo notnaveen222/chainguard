@@ -371,6 +371,167 @@ odd strings.
 
 ---
 
+## 2026-08-17 — Phase 3: Dataset pipeline
+
+**Built:** the encoded-at-rest sample vault, acquisition from the DataDog
+malicious-package dataset and the live registries, and the feature-matrix builder.
+
+### D-028 — Malicious sample source: DataDog dataset
+
+**Decision:** Use `DataDog/malicious-software-packages-dataset` (Apache-2.0) as
+the malicious corpus — 1,834 PyPI and 47,406 npm packages caught attacking users.
+
+**Rationale:** Real, published, citable, and permissively licensed. Critically,
+its samples ship as **password-encrypted ZIPs** (password `infected`), which is
+the dataset's own convention for keeping malware inert. That property does the
+job the custom encoding was designed for, so samples arrive already opaque and
+are decrypted in memory only.
+
+`lxyeternal/pypi_malregistry` was also reachable but is PyPI-only, unlicensed,
+and stores samples as plain tarballs.
+
+### D-029 — The vault is obfuscation, and says so
+
+`dataset/vault.py` compresses and XORs every stored blob against a BLAKE2b
+keystream. The key is a constant in the source file.
+
+**This is explicitly not cryptography**, and the module docstring says so. The
+threat model is "an antivirus scanner, or a careless double-click" — not an
+attacker with disk access, who can also read the key. Describing it as encryption
+would be a false claim about the guarantee.
+
+The security property that actually matters does not depend on the encoding at
+all: **no code path in this project executes a sample.** Analysis is static
+parsing of source text.
+
+### D-030 — One sample per package, deterministically selected
+
+Multiple versions of one malicious package are near-identical. Letting them span
+the train/test split would inflate every reported score. Selection is seeded, so
+a rebuild reproduces the same dataset.
+
+### D-031 — Benign corpus is real popular packages, not toy examples
+
+**Decision:** Negative examples are genuine packages downloaded live from npm and
+PyPI, sampled across the whole popular list.
+
+**Rationale:** The classifier must separate malware from *real library code* —
+which is full of network calls, subprocess use, dynamic imports and minified
+bundles. A benign corpus of hand-written clean examples would produce a model
+that scores beautifully in evaluation and collapses on the first real scan.
+
+A first version took a prefix of the alphabetically-sorted popular list, which
+returned only packages beginning with "a". Now shuffled with a fixed seed.
+
+### D-032 — Label leakage was designed out, not hoped away
+
+**This is the most important decision in the training pipeline.**
+
+Malicious samples come from an archive; those packages were removed from the
+registries years ago, so they have no live metadata — no publication date, no
+version count, no maintainer list. Benign samples are fetched live and have all
+of it. Feeding registry metadata to the classifier would let `version_count > 0`
+separate the classes perfectly, by detecting **which corpus a sample came from**
+rather than whether it is malicious. The model would report near-perfect metrics
+and be worthless.
+
+Two countermeasures, both enforced in code rather than by convention:
+
+1. Metadata is reconstructed **only from inside the archive** (`package.json`,
+   `PKG-INFO`) — fields an attacker equally controls, available identically for
+   both classes.
+2. `age_days`, `version_count`, `maintainer_count`, `is_single_version` and
+   `is_very_new` are **zeroed for every training sample**, in
+   `corpus.build_matrix`, so no caller can bypass it. They stay in the schema and
+   are still populated at *scan* time, where the information is real and symmetric.
+
+The cost is that the model cannot learn "published yesterday" as evidence. That
+is the right trade: a feature available for only one class in training is not a
+feature, it is the label.
+
+A related fix: `SINGLE_VERSION` was firing on 100% of *both* classes, because
+archive-derived metadata always reports a version count of 0. The signal now
+distinguishes 0 ("unknown") from 1 ("genuinely one version").
+
+### D-033 — Verify the vault before training
+
+`build_dataset.py` re-reads and hash-checks every stored sample before analysis.
+Training on a silently truncated dataset is the exact failure this whole design
+exists to prevent, so a corrupt blob is reported loudly rather than skipped.
+
+---
+
+## 2026-08-17 — Phase 5: OSV and reachability
+
+**Built:** the OSV advisory client with CVSS scoring and symbol extraction, a
+Python call-graph reachability engine, and npm import-level reachability.
+
+### D-034 — Vulnerable symbols come from three tiers, and the tier is reported
+
+npm and PyPI advisories almost never carry structured vulnerable-symbol data
+(unlike Go). Symbols are recovered from, in order: structured
+`ecosystem_specific` fields; a curated table of ~35 well-known packages; and
+code spans parsed out of advisory prose.
+
+**The tier is attached to every result.** A reachability verdict is only as
+trustworthy as the symbol list it was computed against, and presenting a
+prose-parsed verdict with the same confidence as a structured one would be the
+most misleading thing this system could do. Commercial tools maintain thousands
+of curated entries; that gap is documented, not hidden.
+
+### D-035 — Graded verdicts, not a reachable/unreachable boolean
+
+`NOT_IMPORTED` (high confidence — the package is in the tree but the application
+never imports it) is a much stronger claim than `SYMBOL_NOT_CALLED` (medium), and
+both differ from `ASSUMED_REACHABLE` (low — imported, but the advisory names no
+symbols so nothing can be ruled out). Collapsing these into one boolean would
+throw away the distinction that makes the output actionable.
+
+### D-036 — Entry points, and the two-pass search
+
+Entry points are modules **nothing else imports** — scripts, CLI commands,
+plugin modules. For those modules, public functions are also treated as callable,
+because something outside the analysed code invokes them. Modules that *are*
+imported get no such treatment; only genuine call edges reach into them.
+Without that distinction, every function would be an entry point and everything
+would report as reachable.
+
+The search then runs **twice**. The first pass starts only from module-level
+code, so any path it finds is a real chain of calls — the convincing artifact.
+Only if that finds nothing does the second pass add the assumed-callable public
+functions. Verified on a fixture project: the proof for PyYAML is
+`main → main.run → main.load_settings → yaml.load`, with file and line for each
+step, rather than the one-hop path the naive seeding produced.
+
+### D-037 — CVSS v3 base score is approximated deliberately
+
+`_score_from_vector` implements the CVSS v3 base equation but not the full
+specification (no temporal or environmental metrics). The score is used to
+*order* findings, so accuracy to a severity band is sufficient, and where the
+advisory states a severity label directly, the label wins. Verified against
+published values: CVE-2019-20477 → 9.8, CVE-2020-8203 → 7.4, CVE-2020-7598 → 5.6.
+
+### D-038 — npm reachability is import-level, and that boundary is stated
+
+Full JavaScript call-graph construction across dynamic `require`, bundler output,
+prototype patching and monkey-patching is a research problem in its own right.
+Attempting it in this timeframe would produce something that looks like
+reachability analysis and quietly returns wrong answers. Instead npm reports
+whether the vulnerable package is imported at all, and by which files — a weaker
+but *sound* claim, and still where most of the noise reduction comes from, since
+most transitive dependencies are never imported by the application.
+
+### D-039 — Uncertainty resolves to reachable
+
+Implementing D-007: no source available → `NOT_ANALYSED`, which counts as
+reachable. Advisory names no symbols → `ASSUMED_REACHABLE`. A parse failure drops
+the file rather than the finding. `Verdict.is_reachable` returns `True` for every
+uncertain state, so a future caller cannot accidentally treat "we don't know" as
+"safe".
+
+---
+
 <!-- New entries are appended below as work proceeds. -->
+
 
 
