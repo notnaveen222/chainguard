@@ -242,16 +242,32 @@ the ability to explain a finding, which is the whole point of the system.
 
 ## 4. Data model
 
-Persisted to SQLite (`data/chainguard.db`) via SQLAlchemy:
+Persisted to SQLite (`data/chainguard.db`) via SQLAlchemy, as a single `scans`
+table: queryable summary columns (target, ecosystem, status, timestamp, package
+counts, reachable/unreachable vulnerability counts, detector used) plus the full
+scan result stored as JSON.
 
-- `Scan` — one submitted scan: target, ecosystem, timestamp, status, summary
-- `PackageResult` — one package within a scan: name, version, malice score, verdict
-- `Signal` — one piece of evidence supporting a malice verdict
-- `Vulnerability` — one CVE affecting a package: id, CVSS, summary, fixed version
-- `ReachabilityResult` — reachable/unreachable + serialised call path
+Five normalised tables (`Scan`, `PackageResult`, `Signal`, `Vulnerability`,
+`ReachabilityResult`) were the original plan and were rejected during
+implementation. A scan result is a deeply nested document that is always read
+whole — packages contain signals, vulnerabilities contain call paths — so
+normalising it would mean a five-way join on every read to reconstruct exactly
+what was written. The summary columns already serve every listing and filtering
+query the dashboard makes.
 
-SQLite is chosen for zero-configuration demo reliability. Nothing in the schema
-prevents swapping in PostgreSQL; the SQLAlchemy layer is dialect-agnostic.
+SQLite is chosen for zero-configuration demo reliability. Nothing prevents
+swapping in PostgreSQL; the SQLAlchemy layer is dialect-agnostic and JSON columns
+are supported by both.
+
+### 4.1 Distribution names vs. import names
+
+A separate resolution layer (`vulns/import_names.py`) maps PyPI *distribution*
+names to the *module* names they provide — `pyyaml` → `yaml`, `pillow` → `PIL`.
+Advisories are published against distribution names while source code imports
+module names, and conflating the two caused reachability to report imported
+packages as unreachable (BUILD_LOG D-040). The mapping is derived from each
+downloaded archive's `top_level.txt` or directory layout, with a curated table as
+fallback.
 
 ---
 

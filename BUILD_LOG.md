@@ -531,7 +531,108 @@ uncertain state, so a future caller cannot accidentally treat "we don't know" as
 
 ---
 
+## 2026-08-18 — Phases 6+7: API, dashboard, and two bugs the demo exposed
+
+**Built:** scan orchestration, FastAPI service with background jobs, SQLite
+persistence, the React/Tailwind dashboard, the CLI, and a demo project.
+
+### D-040 — The first end-to-end run found two real bugs
+
+Everything had passed its own unit tests. Running the whole pipeline against a
+real project immediately exposed two defects that component tests could not,
+which is the argument for building the demo fixture early rather than last.
+
+**Bug 1 — PyPI distribution names are not import names.**
+`pip install pyyaml` gives you `import yaml`. `pillow` gives `PIL`.
+`beautifulsoup4` gives `bs4`. Advisories are published against the *distribution*
+name; source code imports the *module* name. The reachability engine compared the
+two directly, so it searched the call graph for `pyyaml`, found nothing, and
+reported three critical PyYAML deserialisation advisories as **NOT_IMPORTED** —
+while `config.py` in the very same project plainly contained `import yaml`.
+
+This is the worst possible failure direction: a confident false *safe* verdict,
+which is precisely what D-007's fail-safe principle exists to prevent. It also
+would not have been caught by any test that used a package whose two names happen
+to coincide.
+
+Fixed in `vulns/import_names.py`, primarily by *deriving* the mapping rather than
+hard-coding it: ChainGuard already downloads every package to analyse it, so the
+top-level modules are read straight out of the archive — from `top_level.txt`
+when the author shipped one, otherwise from the directory layout. A curated table
+of ~45 well-known names covers the case where contents are unavailable. Deriving
+from the artifact is authoritative and needs no maintenance as the ecosystem
+changes.
+
+**Bug 2 — `EXFIL_ON_INSTALL` fired on `exec(open('version.py').read())`.**
+The composite required `runs_at_install AND (network OR sensitive_path OR
+dynamic_exec)`. Loading a version string with `exec()` in `setup.py` is a
+completely standard idiom, so that third disjunct flagged `pillow`, `lxml`,
+`flask`, `urllib3` and `requests` as **malicious** with scores above 0.9.
+
+Now requires both halves of an actual exfiltration: network egress **and**
+something worth stealing being read (environment, credential path, or host
+reconnaissance). Dynamic execution alone no longer qualifies.
+
+### D-041 — Reverse-shell detection now matches wiring, not co-occurrence
+
+`REVERSE_SHELL_PATTERN` previously fired on `network AND process_spawn AND
+dynamic_exec` in one file — which describes a large fraction of all build
+scripts, and duly fired on `lxml`'s `setup.py` (it runs `pkg-config`, fetches
+URLs, and execs a version file).
+
+A reverse shell is not that combination; it is *a socket wired to a shell's
+standard streams*. Detection now matches that directly — `dup2` onto a socket's
+file descriptor, `pty.spawn`, `bash -i >& /dev/tcp/`, `nc -e`, a subprocess with
+`stdin=` bound to a socket. Narrower, and it means something when it fires.
+
+### D-042 — Demo project designed for contrast, not vulnerability count
+
+`demo/vulnerable-app` pins seven dependencies with published advisories, arranged
+so each reachability verdict is represented:
+
+* `pyyaml` — `yaml.load` is genuinely called, three levels deep → **reachable**
+* `jinja2`, `requests` — imported, vulnerable API untouched → **symbol not called**
+* `flask`, `urllib3`, `pillow`, `lxml` — never imported → **not imported**
+
+Measured result: **180 advisories → 6 reachable, 97% ruled out**, with the proof
+path `app → app.main → app.bootstrap → config.load_settings → yaml.load`. The
+multi-hop path is the point — it demonstrates a real call-graph traversal rather
+than a single-hop string match.
+
+### D-043 — Scan jobs run in the background, progress in memory, results in SQLite
+
+A real scan takes tens of seconds, so submitting one returns a job id and the
+client polls. Progress state is ephemeral and kept in memory; results are
+persisted. A restart mid-scan loses the job, which is correct for a single-node
+tool — resuming a half-finished scan would be more machinery than the problem
+warrants.
+
+Scan results are stored as one row with queryable summary columns plus the full
+result as JSON, rather than five normalised tables. The result is a deeply nested
+document always read whole, and the summary columns already serve every listing
+and filtering need. (This differs from the original sketch in ARCHITECTURE.md §4,
+which has been corrected to match what was built.)
+
+### D-044 — CORS is restricted, and the dev server proxies instead
+
+The API is allowed only from the Vite dev-server origins, never `*`. This service
+reads local filesystem paths and triggers outbound requests; any page in any tab
+being able to drive it would be a genuine problem. In development the dashboard
+uses relative URLs through Vite's proxy, so the browser makes no cross-origin
+request at all and a CORS misconfiguration cannot silently break a demo.
+
+### D-045 — The UI reports uncertainty rather than hiding it
+
+Every vulnerability row carries both its reachability confidence and how its
+vulnerable symbols were obtained (`structured` / `curated` / `parsed`). Scan
+warnings — truncated resolution, unresolved requirements, missing source for
+reachability — are rendered in the results, not swallowed. A security tool that
+overstates its own certainty is worse than one that admits a gap.
+
+---
+
 <!-- New entries are appended below as work proceeds. -->
+
 
 
 

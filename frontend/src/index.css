@@ -1,0 +1,68 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  html {
+    -webkit-font-smoothing: antialiased;
+  }
+
+  body {
+    @apply bg-ink-950 text-ink-200 font-sans;
+  }
+
+  /* Scrollbars styled to match the surface, so wide tables that scroll
+     internally do not look like a rendering fault. */
+  ::-webkit-scrollbar {
+    width: 10px;
+    height: 10px;
+  }
+  ::-webkit-scrollbar-track {
+    @apply bg-ink-900;
+  }
+  ::-webkit-scrollbar-thumb {
+    @apply bg-ink-700 rounded-full;
+  }
+  ::-webkit-scrollbar-thumb:hover {
+    @apply bg-ink-600;
+  }
+}
+
+@layer components {
+  .card {
+    @apply bg-ink-900 border border-ink-800 rounded-xl;
+  }
+
+  .btn {
+    @apply inline-flex items-center gap-2 px-4 py-2 rounded-lg font-medium
+           transition-colors disabled:opacity-40 disabled:cursor-not-allowed;
+  }
+
+  .btn-primary {
+    @apply btn bg-cyan-600 hover:bg-cyan-500 text-white;
+  }
+
+  .btn-ghost {
+    @apply btn bg-ink-800 hover:bg-ink-700 text-ink-200;
+  }
+
+  .input {
+    @apply w-full bg-ink-950 border border-ink-700 rounded-lg px-3 py-2 text-sm
+           text-ink-100 placeholder-ink-500 focus:outline-none focus:ring-2
+           focus:ring-cyan-600/50 focus:border-cyan-600;
+  }
+
+  .badge {
+    @apply inline-flex items-center px-2 py-0.5 rounded text-xs font-semibold
+           uppercase tracking-wide;
+  }
+
+  .table-header {
+    @apply text-left text-xs font-semibold uppercase tracking-wider
+           text-ink-400 px-4 py-3;
+  }
+
+  .table-cell {
+    @apply px-4 py-3 text-sm align-top;
+  }
+}

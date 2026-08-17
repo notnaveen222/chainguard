@@ -136,6 +136,29 @@ def find_public_ip_literals(text: str) -> list[str]:
 # Reconnaissance
 # --------------------------------------------------------------------------- #
 
+# --------------------------------------------------------------------------- #
+# Reverse shells
+# --------------------------------------------------------------------------- #
+
+# A reverse shell is not "network + subprocess in one file" — that combination
+# describes half of all build scripts. What distinguishes it is *wiring a socket
+# to a shell's standard streams*. These patterns match that wiring directly.
+#
+# An earlier composite-flag version of this check fired on lxml's setup.py,
+# which legitimately runs commands, opens URLs and execs a version file.
+REVERSE_SHELL_PATTERNS: tuple[tuple[str, str], ...] = (
+    (r"dup2\s*\(\s*\w*(?:sock|s|conn|client)\w*\.fileno\s*\(\)", "Socket duplicated onto stdio"),
+    (r"dup2\s*\([^)]*,\s*[012]\s*\)", "File descriptor redirected onto stdio"),
+    (r"pty\.spawn\s*\(", "Pseudo-terminal spawned"),
+    (r"/bin/(?:ba)?sh\s+-i\b", "Interactive shell invocation"),
+    (r"\bnc\s+(?:-[a-zA-Z]+\s+)*\S+\s+\d+\s*(?:-e|\|)", "Netcat with command execution"),
+    (r"bash\s+-i\s*>&\s*/dev/tcp/", "Bash /dev/tcp reverse shell"),
+    (r"powershell.*-nop.*-c.*New-Object\s+System\.Net\.Sockets", "PowerShell reverse shell"),
+    (r"subprocess\.(?:call|Popen|run)\s*\([^)]*std(?:in|out|err)\s*=\s*\w*(?:sock|conn)",
+     "Process wired to a socket"),
+)
+
+
 HOST_RECON_PATTERNS: tuple[tuple[str, str], ...] = (
     (r"\bos\.hostname\b|\bgethostname\b|\bplatform\.node\b", "Hostname"),
     (r"\bos\.userInfo\b|\bgetpass\.getuser\b|\bos\.getlogin\b", "Username"),
@@ -268,6 +291,7 @@ CRYPTO_WALLET_MATCHERS = _compile(CRYPTO_WALLET_PATTERNS)
 PERSISTENCE_MATCHERS = _compile(PERSISTENCE_PATHS)
 SUSPICIOUS_DOMAIN_MATCHERS = _compile(SUSPICIOUS_DOMAINS)
 HOST_RECON_MATCHERS = _compile(HOST_RECON_PATTERNS)
+REVERSE_SHELL_MATCHERS = _compile(REVERSE_SHELL_PATTERNS)
 
 
 def match_first(

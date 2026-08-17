@@ -1,0 +1,20 @@
+# Demo application dependencies, deliberately pinned to versions with published
+# advisories so ChainGuard has real CVEs to reason about.
+#
+# The point of this fixture is the CONTRAST, not the vulnerability count:
+#   - pyyaml   : the vulnerable function IS called      -> reachable
+#   - jinja2   : imported, vulnerable function NOT used -> not reachable
+#   - requests : imported, but only for a safe API      -> not reachable
+#   - flask / urllib3 / pillow / lxml : pulled in transitively and never
+#                                       imported by this app -> not reachable
+#
+# A scan of this project should therefore report many advisories and prove that
+# only a small number can actually be reached from application code.
+
+pyyaml==5.1
+jinja2==2.10
+requests==2.19.0
+flask==0.12.2
+urllib3==1.24.1
+pillow==5.2.0
+lxml==4.2.4

@@ -21,6 +21,7 @@ from chainguard.analysis.indicators import (
     CRYPTO_WALLET_MATCHERS,
     HOST_RECON_MATCHERS,
     PERSISTENCE_MATCHERS,
+    REVERSE_SHELL_MATCHERS,
     SENSITIVE_PATH_MATCHERS,
     SUSPICIOUS_DOMAIN_MATCHERS,
     count_escape_sequences,
@@ -29,6 +30,7 @@ from chainguard.analysis.indicators import (
     looks_like_encoded_payload,
     looks_minified,
     match_all,
+    match_first,
     shannon_entropy,
 )
 from chainguard.analysis.signals import make_signal
@@ -451,6 +453,18 @@ def _analyse_text_level(analysis: FileAnalysis, source: str) -> None:
             )
         )
         break
+
+    # Detected by its actual wiring rather than by co-occurring flags — see the
+    # note above REVERSE_SHELL_PATTERNS in indicators.py.
+    reverse_shell = match_first(source, REVERSE_SHELL_MATCHERS)
+    if reverse_shell:
+        matched, label = reverse_shell
+        analysis.add(
+            make_signal(
+                "REVERSE_SHELL_PATTERN", file=analysis.path, evidence=matched,
+                detail=f"{label} — the wiring of a reverse shell",
+            )
+        )
 
 
 def _analyse_setup_py(analysis: FileAnalysis, tree: ast.Module, visitor: _PythonVisitor) -> None:

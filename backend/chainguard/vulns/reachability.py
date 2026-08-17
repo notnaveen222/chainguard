@@ -63,6 +63,7 @@ from typing import Iterable, Optional
 
 from chainguard.logging_setup import get_logger
 from chainguard.models.package import Ecosystem
+from chainguard.vulns.import_names import ImportNameResolver
 
 logger = get_logger(__name__)
 
@@ -311,7 +312,7 @@ class PythonCallGraph:
         return reachable
 
     def find_external_call(
-        self, package: str, symbols: Iterable[str]
+        self, package: str, symbols: Iterable[str], aliases: Iterable[str] = ()
     ) -> tuple[Optional[str], list[CallSite]]:
         """Search for a reachable call to ``package``'s vulnerable symbols.
 
@@ -319,7 +320,10 @@ class PythonCallGraph:
         the entry point, so the caller can show *why* the code is reachable
         rather than merely asserting that it is.
         """
-        package = package.lower()
+        # Match against every module the distribution provides, not just its
+        # distribution name — `import yaml` must satisfy a query for `pyyaml`.
+        roots = {package.lower(), package.lower().replace("-", "_")}
+        roots.update(alias.lower() for alias in aliases)
         wanted = {s.split(".")[-1].lower() for s in symbols if s}
         wanted_full = {s.lower() for s in symbols if s}
 
@@ -333,15 +337,15 @@ class PythonCallGraph:
             for module in self.entry_points()
             if f"{module}::{MODULE_SCOPE}" in self.functions
         ]
-        matched, path = self._search(module_seeds, package, wanted, wanted_full)
+        matched, path = self._search(module_seeds, roots, wanted, wanted_full)
         if matched:
             return matched, path
-        return self._search(self.seed_scopes(), package, wanted, wanted_full)
+        return self._search(self.seed_scopes(), roots, wanted, wanted_full)
 
     def _search(
         self,
         seeds: list[str],
-        package: str,
+        roots: set[str],
         wanted: set[str],
         wanted_full: set[str],
     ) -> tuple[Optional[str], list[CallSite]]:
@@ -372,7 +376,7 @@ class PythonCallGraph:
                     target = callee[4:]
                     tail = target.split(".")[-1].lower()
                     root = target.split(".")[0].lower()
-                    if root != package and not target.lower().startswith(f"{package}."):
+                    if root not in roots:
                         continue
                     if wanted and tail not in wanted and target.lower() not in wanted_full:
                         continue
@@ -422,10 +426,18 @@ class PythonCallGraph:
         )
         return path
 
-    def imports_package(self, package: str) -> set[str]:
-        """Modules importing ``package``, matching normalised names."""
+    def imports_package(self, package: str, aliases: Iterable[str] = ()) -> set[str]:
+        """Modules importing ``package``.
+
+        ``aliases`` carries the module names the distribution actually provides
+        — ``pyyaml`` ships ``yaml``, ``pillow`` ships ``PIL``. Without them this
+        lookup fails on any package whose distribution and import names differ,
+        and a missed import produces a false "not imported" verdict.
+        """
         package = package.lower()
         candidates = {package, package.replace("-", "_"), package.replace("_", "-")}
+        candidates.update(alias.lower() for alias in aliases)
+
         found: set[str] = set()
         for imported, modules in self.external_imports.items():
             if imported in candidates:
@@ -667,9 +679,18 @@ class JavaScriptImportGraph:
 class ReachabilityAnalyser:
     """Decides whether advisories are reachable from a project's own code."""
 
-    def __init__(self, project_root: Path, ecosystem: Ecosystem) -> None:
+    def __init__(
+        self,
+        project_root: Path,
+        ecosystem: Ecosystem,
+        resolver: Optional["ImportNameResolver"] = None,
+    ) -> None:
         self.project_root = project_root
         self.ecosystem = ecosystem
+        # Translates distribution names into the modules they provide. Without
+        # it, `pyyaml` never matches `import yaml` and a critical advisory is
+        # reported as unreachable.
+        self.resolver = resolver or ImportNameResolver()
         self.python_graph: Optional[PythonCallGraph] = None
         self.js_graph: Optional[JavaScriptImportGraph] = None
         self.available = False
@@ -708,7 +729,8 @@ class ReachabilityAnalyser:
         graph = self.python_graph
         assert graph is not None
 
-        importers = graph.imports_package(package)
+        aliases = self.resolver.resolve(package, Ecosystem.PYPI)
+        importers = graph.imports_package(package, aliases)
         if not importers:
             return ReachabilityResult(
                 package=package,
@@ -732,7 +754,7 @@ class ReachabilityAnalyser:
                 confidence="low",
             )
 
-        matched, path = graph.find_external_call(package, symbols)
+        matched, path = graph.find_external_call(package, symbols, aliases)
         if matched:
             return ReachabilityResult(
                 package=package,

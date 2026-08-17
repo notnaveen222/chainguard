@@ -155,29 +155,30 @@ def _derive_composites(analyses: list[FileAnalysis]) -> list[Signal]:
                 )
             )
 
-        if analysis.runs_at_install and (
-            analysis.has_network or analysis.has_sensitive_path or analysis.has_dynamic_exec
+        # Exfiltration at install time requires *both* halves: something worth
+        # stealing being read, and a way to send it.
+        #
+        # An earlier version fired on `runs_at_install AND (network OR sensitive
+        # path OR dynamic exec)`, which was badly wrong. `exec(open('version.py')
+        # .read())` is the standard way real packages load their version string
+        # in setup.py, so dynamic-exec-at-install-time flagged pillow, lxml,
+        # flask, urllib3 and requests as malicious with scores above 0.9.
+        if (
+            analysis.runs_at_install
+            and analysis.has_network
+            and (
+                analysis.has_env_access
+                or analysis.has_sensitive_path
+                or analysis.has_host_recon
+            )
         ):
             signals.append(
                 make_signal(
                     "EXFIL_ON_INSTALL",
                     file=analysis.path,
                     detail=(
-                        "Data collection or remote access occurs in a file that runs "
-                        "automatically at install time"
-                    ),
-                )
-            )
-
-        # A socket plus a shell in one file is the canonical reverse shell.
-        if analysis.has_network and analysis.has_process_spawn and analysis.has_dynamic_exec:
-            signals.append(
-                make_signal(
-                    "REVERSE_SHELL_PATTERN",
-                    file=analysis.path,
-                    detail=(
-                        "Combines network I/O, process spawning and dynamic execution "
-                        "in a single file"
+                        "A file that runs automatically at install time both collects "
+                        "local data and performs network I/O"
                     ),
                 )
             )
