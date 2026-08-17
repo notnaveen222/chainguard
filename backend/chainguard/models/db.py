@@ -67,12 +67,21 @@ class ScanRecord(Base):
 
     def to_summary(self) -> dict[str, Any]:
         """Lightweight representation for list endpoints."""
+        # SQLite has no timezone-aware column type, so the UTC timestamp comes
+        # back naive. Serialising it without an offset makes the browser read
+        # UTC as local time — scans then display hours off, which looks like
+        # broken history rather than a formatting bug. Re-attach UTC on the way
+        # out so the client converts correctly.
+        created = self.created_at
+        if created is not None and created.tzinfo is None:
+            created = created.replace(tzinfo=timezone.utc)
+
         return {
             "scan_id": self.id,
             "target": self.target,
             "ecosystem": self.ecosystem,
             "status": self.status,
-            "created_at": self.created_at.isoformat() if self.created_at else None,
+            "created_at": created.isoformat() if created else None,
             "duration_seconds": round(self.duration_seconds or 0.0, 2),
             "total_packages": self.total_packages,
             "malicious_packages": self.malicious_packages,
