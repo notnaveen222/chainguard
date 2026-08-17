@@ -300,6 +300,19 @@ def build_metadata(
         "PR-AUC leads over accuracy: in deployment the class balance is extreme, "
         "and a model predicting 'benign' always would score high accuracy while "
         "detecting nothing.",
+        "Structural features (file_count, total_bytes, source_file_count) rank "
+        "highly because malicious samples are overwhelmingly small single-purpose "
+        "droppers while popular benign packages are large libraries. This is a real "
+        "signal, but it is partly a property of the corpus: a large malicious "
+        "package, or a tiny legitimate utility, sits where the model has little "
+        "evidence. The behavioural features are what should generalise, and the "
+        "ablation study measures how much work each family is doing.",
+        "The rules-baseline score is itself one of the 55 features, so the model "
+        "is a stacked learner over the rules engine rather than an independent "
+        "alternative to it. The 'model vs. baseline' comparison should therefore "
+        "be read as 'what the learned layer adds on top of the rules', not as two "
+        "unrelated detectors competing. The 'aggregate' row of the ablation study "
+        "measures exactly how much that feature contributes.",
     ]
 
     return ModelMetadata(

@@ -1,0 +1,426 @@
+{
+  "schema_version": 1,
+  "feature_names": [
+    "install_hook_present",
+    "install_hook_count",
+    "install_hook_network",
+    "install_hook_shell_pipe",
+    "install_hook_obfuscated",
+    "setup_py_side_effects",
+    "dynamic_eval",
+    "decode_then_exec",
+    "dynamic_import",
+    "process_spawn",
+    "shell_execution",
+    "reverse_shell",
+    "network_access",
+    "hardcoded_ip",
+    "suspicious_endpoint",
+    "dns_exfil",
+    "sensitive_path_access",
+    "crypto_wallet_access",
+    "env_access",
+    "env_bulk_harvest",
+    "file_write_sensitive",
+    "host_recon",
+    "high_entropy_string",
+    "base64_blob",
+    "charcode_obfuscation",
+    "hex_escape_heavy",
+    "string_array_decoder",
+    "minified_ratio",
+    "max_line_length",
+    "parse_failure_ratio",
+    "exfil_env_to_network",
+    "exfil_credentials_to_network",
+    "exfil_on_install",
+    "has_repository",
+    "age_days",
+    "version_count",
+    "maintainer_count",
+    "description_length",
+    "dependency_count",
+    "is_single_version",
+    "has_empty_description",
+    "is_very_new",
+    "file_count",
+    "total_bytes",
+    "source_file_count",
+    "avg_file_bytes",
+    "source_file_ratio",
+    "tiny_package_with_hook",
+    "typosquat_proximity",
+    "typosquat_homoglyph",
+    "typosquat_scope_confusion",
+    "typosquat_affix",
+    "critical_signals",
+    "high_signals",
+    "medium_signals",
+    "total_signals",
+    "distinct_signal_types",
+    "rules_baseline_score"
+  ],
+  "algorithm": "gradient_boosting",
+  "trained_at": "2026-08-17T19:47:44.358901+00:00",
+  "n_samples": 48,
+  "n_malicious": 24,
+  "n_benign": 24,
+  "metrics": {
+    "accuracy": 0.8333,
+    "precision": 0.8333,
+    "recall": 0.8333,
+    "f1": 0.8333,
+    "roc_auc": 0.9601,
+    "pr_auc": 0.9647,
+    "confusion_matrix": {
+      "true_negative": 20,
+      "false_positive": 4,
+      "false_negative": 4,
+      "true_positive": 20
+    },
+    "threshold": 0.5,
+    "support": {
+      "benign": 24,
+      "malicious": 24
+    },
+    "n_splits": 3,
+    "per_fold": [
+      {
+        "accuracy": 0.6875,
+        "precision": 0.6667,
+        "recall": 0.75,
+        "f1": 0.7059,
+        "roc_auc": 0.875,
+        "pr_auc": 0.903,
+        "confusion_matrix": {
+          "true_negative": 5,
+          "false_positive": 3,
+          "false_negative": 2,
+          "true_positive": 6
+        },
+        "threshold": 0.5,
+        "support": {
+          "benign": 8,
+          "malicious": 8
+        }
+      },
+      {
+        "accuracy": 0.875,
+        "precision": 0.875,
+        "recall": 0.875,
+        "f1": 0.875,
+        "roc_auc": 0.9844,
+        "pr_auc": 0.9861,
+        "confusion_matrix": {
+          "true_negative": 7,
+          "false_positive": 1,
+          "false_negative": 1,
+          "true_positive": 7
+        },
+        "threshold": 0.5,
+        "support": {
+          "benign": 8,
+          "malicious": 8
+        }
+      },
+      {
+        "accuracy": 0.9375,
+        "precision": 1.0,
+        "recall": 0.875,
+        "f1": 0.9333,
+        "roc_auc": 0.9844,
+        "pr_auc": 0.9861,
+        "confusion_matrix": {
+          "true_negative": 8,
+          "false_positive": 0,
+          "false_negative": 1,
+          "true_positive": 7
+        },
+        "threshold": 0.5,
+        "support": {
+          "benign": 8,
+          "malicious": 8
+        }
+      }
+    ],
+    "fold_std": {
+      "precision": 0.1375,
+      "recall": 0.0589,
+      "f1": 0.0964
+    }
+  },
+  "cv_metrics": {
+    "accuracy": 0.8333,
+    "precision": 0.8333,
+    "recall": 0.8333,
+    "f1": 0.8333,
+    "roc_auc": 0.9601,
+    "pr_auc": 0.9647,
+    "confusion_matrix": {
+      "true_negative": 20,
+      "false_positive": 4,
+      "false_negative": 4,
+      "true_positive": 20
+    },
+    "threshold": 0.5,
+    "support": {
+      "benign": 24,
+      "malicious": 24
+    },
+    "n_splits": 3,
+    "per_fold": [
+      {
+        "accuracy": 0.6875,
+        "precision": 0.6667,
+        "recall": 0.75,
+        "f1": 0.7059,
+        "roc_auc": 0.875,
+        "pr_auc": 0.903,
+        "confusion_matrix": {
+          "true_negative": 5,
+          "false_positive": 3,
+          "false_negative": 2,
+          "true_positive": 6
+        },
+        "threshold": 0.5,
+        "support": {
+          "benign": 8,
+          "malicious": 8
+        }
+      },
+      {
+        "accuracy": 0.875,
+        "precision": 0.875,
+        "recall": 0.875,
+        "f1": 0.875,
+        "roc_auc": 0.9844,
+        "pr_auc": 0.9861,
+        "confusion_matrix": {
+          "true_negative": 7,
+          "false_positive": 1,
+          "false_negative": 1,
+          "true_positive": 7
+        },
+        "threshold": 0.5,
+        "support": {
+          "benign": 8,
+          "malicious": 8
+        }
+      },
+      {
+        "accuracy": 0.9375,
+        "precision": 1.0,
+        "recall": 0.875,
+        "f1": 0.9333,
+        "roc_auc": 0.9844,
+        "pr_auc": 0.9861,
+        "confusion_matrix": {
+          "true_negative": 8,
+          "false_positive": 0,
+          "false_negative": 1,
+          "true_positive": 7
+        },
+        "threshold": 0.5,
+        "support": {
+          "benign": 8,
+          "malicious": 8
+        }
+      }
+    ],
+    "fold_std": {
+      "precision": 0.1375,
+      "recall": 0.0589,
+      "f1": 0.0964
+    }
+  },
+  "baseline_metrics": {
+    "accuracy": 0.7708,
+    "precision": 0.8421,
+    "recall": 0.6667,
+    "f1": 0.7442,
+    "roc_auc": 0.9028,
+    "pr_auc": 0.9115,
+    "confusion_matrix": {
+      "true_negative": 21,
+      "false_positive": 3,
+      "false_negative": 8,
+      "true_positive": 16
+    },
+    "threshold": 0.5,
+    "support": {
+      "benign": 24,
+      "malicious": 24
+    },
+    "note": "Weighted-sum rules engine with no learning; see analysis/signals.py"
+  },
+  "ablation": {},
+  "feature_importances": [
+    [
+      "rules_baseline_score",
+      0.389276
+    ],
+    [
+      "file_count",
+      0.242947
+    ],
+    [
+      "env_access",
+      0.063356
+    ],
+    [
+      "source_file_count",
+      0.05719
+    ],
+    [
+      "dependency_count",
+      0.052996
+    ],
+    [
+      "total_bytes",
+      0.032729
+    ],
+    [
+      "distinct_signal_types",
+      0.028783
+    ],
+    [
+      "description_length",
+      0.025293
+    ],
+    [
+      "has_empty_description",
+      0.024337
+    ],
+    [
+      "total_signals",
+      0.019633
+    ],
+    [
+      "source_file_ratio",
+      0.019575
+    ],
+    [
+      "avg_file_bytes",
+      0.016631
+    ],
+    [
+      "install_hook_present",
+      0.010685
+    ],
+    [
+      "install_hook_network",
+      0.0065
+    ],
+    [
+      "minified_ratio",
+      0.003093
+    ],
+    [
+      "max_line_length",
+      0.002784
+    ],
+    [
+      "has_repository",
+      0.001558
+    ],
+    [
+      "env_bulk_harvest",
+      0.001154
+    ],
+    [
+      "medium_signals",
+      0.000385
+    ],
+    [
+      "parse_failure_ratio",
+      0.000319
+    ],
+    [
+      "host_recon",
+      0.000289
+    ],
+    [
+      "high_signals",
+      0.000227
+    ],
+    [
+      "process_spawn",
+      0.000197
+    ],
+    [
+      "high_entropy_string",
+      5.5e-05
+    ],
+    [
+      "network_access",
+      6e-06
+    ],
+    [
+      "install_hook_count",
+      0.0
+    ],
+    [
+      "dynamic_eval",
+      0.0
+    ],
+    [
+      "critical_signals",
+      0.0
+    ],
+    [
+      "sensitive_path_access",
+      0.0
+    ],
+    [
+      "suspicious_endpoint",
+      0.0
+    ],
+    [
+      "base64_blob",
+      0.0
+    ],
+    [
+      "dynamic_import",
+      0.0
+    ],
+    [
+      "exfil_on_install",
+      0.0
+    ],
+    [
+      "install_hook_shell_pipe",
+      0.0
+    ],
+    [
+      "install_hook_obfuscated",
+      0.0
+    ],
+    [
+      "setup_py_side_effects",
+      0.0
+    ],
+    [
+      "decode_then_exec",
+      0.0
+    ],
+    [
+      "shell_execution",
+      0.0
+    ],
+    [
+      "reverse_shell",
+      0.0
+    ],
+    [
+      "hardcoded_ip",
+      0.0
+    ]
+  ],
+  "notes": [
+    "Splits are grouped by package name (StratifiedGroupKFold): different versions of one package, and repeat uploads from one campaign, never appear on both sides of a split.",
+    "All reported figures come from out-of-fold predictions, so no sample was scored by a model that had seen it.",
+    "Five registry-only features (age_days, version_count, maintainer_count, is_single_version, is_very_new) are zeroed in training to prevent label leakage \u2014 archived malicious samples have no live registry metadata while benign samples do. See BUILD_LOG D-032.",
+    "Malicious samples: DataDog/malicious-software-packages-dataset (Apache-2.0). Benign samples: real packages from the live npm and PyPI registries.",
+    "PR-AUC leads over accuracy: in deployment the class balance is extreme, and a model predicting 'benign' always would score high accuracy while detecting nothing."
+  ]
+}
