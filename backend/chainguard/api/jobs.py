@@ -19,8 +19,9 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any, Optional
 
+from chainguard.config import get_settings
 from chainguard.logging_setup import get_logger
-from chainguard.ml.model import MalwareClassifier
+from chainguard.ml.model import MODEL_FILENAME, MalwareClassifier
 from chainguard.models.db import save_scan
 from chainguard.models.package import Ecosystem
 from chainguard.scanner import ScanResult, Scanner, build_remediation_plan
@@ -69,16 +70,41 @@ class JobRegistry:
         self._jobs: dict[str, JobState] = {}
         self._tasks: dict[str, asyncio.Task] = {}
         self._classifier: Optional[MalwareClassifier] = None
+        #: mtime of the model artifact when it was loaded, used to detect a
+        #: retrain while the server is running.
+        self._model_stamp: Optional[float] = None
 
     @property
     def classifier(self) -> MalwareClassifier:
-        """Load the model once and share it across scans."""
-        if self._classifier is None:
+        """The shared classifier, reloaded if the model file has changed.
+
+        Loading once at startup is the obvious design and is wrong for the
+        workflow this tool actually has: the server is typically already running
+        when `scripts/train_model.py` writes a model for the first time. Without
+        this check the API keeps reporting "no model trained" until someone
+        restarts it — during a demo, that looks like the training run failed.
+
+        The stat call is negligible next to a scan, so it is done on every access
+        rather than on a timer.
+        """
+        model_path = get_settings().models_dir / MODEL_FILENAME
+        try:
+            stamp = model_path.stat().st_mtime if model_path.exists() else None
+        except OSError:
+            stamp = None
+
+        if self._classifier is None or stamp != self._model_stamp:
+            if self._classifier is not None:
+                logger.info("Model artifact changed on disk — reloading")
             self._classifier = MalwareClassifier.load()
+            self._model_stamp = stamp
+
         return self._classifier
 
     def reload_classifier(self) -> None:
-        self._classifier = MalwareClassifier.load()
+        """Force a reload on the next access."""
+        self._classifier = None
+        self._model_stamp = None
 
     # ------------------------------------------------------------------ #
 
