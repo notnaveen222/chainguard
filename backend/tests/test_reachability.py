@@ -197,6 +197,62 @@ class TestOSVParsing:
         if confidence == "parsed":
             assert "renderTemplate" in symbols
 
+    def test_duplicate_cve_records_are_merged(self):
+        """OSV aggregates several databases, so one CVE arrives more than once.
+
+        Regression: the demo project reported CVE-2019-20477 twice — as
+        `CRITICAL 9.8` from GHSA and again as `UNKNOWN` from PyPA — inflating
+        both the advisory total and the reachable count. Since the project's
+        headline claim is the ratio between those numbers, duplicates distort
+        the central result.
+        """
+        from chainguard.scanner import VulnerabilityFinding, _dedupe_vulnerabilities
+
+        rich = VulnerabilityFinding(
+            id="GHSA-aaaa", cve_id="CVE-2019-20477", package="pyyaml", version="5.1",
+            ecosystem="PyPI", severity="CRITICAL", cvss_score=9.8, fixed_version="5.2",
+            summary="Deserialization of untrusted data",
+        )
+        sparse = VulnerabilityFinding(
+            id="PYSEC-2019-1", cve_id="CVE-2019-20477", package="pyyaml", version="5.1",
+            ecosystem="PyPI", severity="UNKNOWN",
+        )
+        other = VulnerabilityFinding(
+            id="GHSA-bbbb", cve_id="CVE-2020-1747", package="pyyaml", version="5.1",
+            ecosystem="PyPI", severity="CRITICAL", cvss_score=9.8,
+        )
+
+        merged = _dedupe_vulnerabilities([rich, sparse, other])
+        assert len(merged) == 2
+
+        kept = next(v for v in merged if v.cve_id == "CVE-2019-20477")
+        assert kept.cvss_score == 9.8, "the more informative record must survive"
+        assert kept.fixed_version == "5.2"
+
+    def test_dedupe_keeps_fixed_version_from_either_record(self):
+        from chainguard.scanner import VulnerabilityFinding, _dedupe_vulnerabilities
+
+        scored = VulnerabilityFinding(
+            id="GHSA-x", cve_id="CVE-1", package="p", version="1", ecosystem="PyPI",
+            severity="HIGH", cvss_score=7.5,
+        )
+        with_fix = VulnerabilityFinding(
+            id="PYSEC-x", cve_id="CVE-1", package="p", version="1", ecosystem="PyPI",
+            severity="UNKNOWN", fixed_version="2.0.0",
+        )
+        merged = _dedupe_vulnerabilities([scored, with_fix])
+        assert len(merged) == 1
+        assert merged[0].fixed_version == "2.0.0"
+
+    def test_advisories_without_cve_are_not_collapsed(self):
+        from chainguard.scanner import VulnerabilityFinding, _dedupe_vulnerabilities
+
+        a = VulnerabilityFinding(id="GHSA-1", package="p", version="1",
+                                 ecosystem="npm", severity="HIGH")
+        b = VulnerabilityFinding(id="GHSA-2", package="p", version="1",
+                                 ecosystem="npm", severity="HIGH")
+        assert len(_dedupe_vulnerabilities([a, b])) == 2
+
     def test_prose_stopwords_are_not_symbols(self):
         symbols, _ = extract_symbols(
             {"summary": "An attacker", "details": "The `attacker` can exploit the `version`."},

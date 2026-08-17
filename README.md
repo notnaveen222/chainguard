@@ -10,13 +10,13 @@ existing tooling answers badly:
    55 static-analysis features detects typosquats, install-time payloads,
    obfuscated code and credential exfiltration — including in packages it has
    never seen.
-2. **Which of the reported CVEs actually matter?** Rather than dumping 180
-   advisories on a developer, ChainGuard performs **reachability analysis**: it
+2. **Which of the reported CVEs actually matter?** Rather than dumping every
+   advisory on a developer, ChainGuard performs **reachability analysis**: it
    builds a call graph of the application, determines whether each vulnerable
    function is genuinely invoked, and shows the call path as proof.
 
-On the bundled demo project, the second question turns **180 reported advisories
-into 6 that are actually reachable** — with a proof path for each:
+On the bundled demo project, the second question turns **92 reported advisories
+into 3 that are actually reachable** — with a proof path for each:
 
 ```
 app → app.main → app.bootstrap → config.load_settings → yaml.load

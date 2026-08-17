@@ -389,9 +389,9 @@ class Scanner:
                     for f in findings]
             advisories = await osv.query_batch(refs)
             for finding, ref in zip(findings, refs):
-                finding.vulnerabilities = [
-                    _to_finding(v, ref, None) for v in advisories.get(ref.key, [])
-                ]
+                finding.vulnerabilities = _dedupe_vulnerabilities(
+                    [_to_finding(v, ref, None) for v in advisories.get(ref.key, [])]
+                )
 
         result.model_source = "model" if self.classifier.is_trained else "rules-baseline"
         _summarise(result)
@@ -489,6 +489,9 @@ class Scanner:
                     else None
                 )
                 finding.vulnerabilities.append(_to_finding(vulnerability, ref, reachability))
+
+        for finding in findings:
+            finding.vulnerabilities = _dedupe_vulnerabilities(finding.vulnerabilities)
 
         result.stage_timings["reach"] = time.time() - stage_start
         result.model_source = "model" if self.classifier.is_trained else "rules-baseline"
@@ -608,6 +611,50 @@ def _to_finding(
         for step in reachability.call_path
     ]
     return finding
+
+
+_SEVERITY_RANK = {"CRITICAL": 4, "HIGH": 3, "MODERATE": 2, "MEDIUM": 2, "LOW": 1, "UNKNOWN": 0}
+
+
+def _dedupe_vulnerabilities(findings: list[VulnerabilityFinding]) -> list[VulnerabilityFinding]:
+    """Collapse advisories that describe the same CVE.
+
+    OSV aggregates several databases, so one flaw commonly arrives twice — once
+    as a GHSA record with a full CVSS vector, once as a PyPA or npm advisory
+    without one. They carry different OSV ids but the same CVE alias.
+
+    Left unmerged this double-counts: the demo project reported CVE-2019-20477
+    twice, as `CRITICAL 9.8` and again as `UNKNOWN`, inflating both the advisory
+    total and the reachable count. Since the headline claim of this project is a
+    ratio between those two numbers, duplicates would distort the central result.
+
+    The surviving record is the most informative one: a CVSS score first, then
+    higher severity, then more vulnerable-symbol data.
+    """
+    def informativeness(finding: VulnerabilityFinding) -> tuple:
+        return (
+            finding.cvss_score is not None,
+            _SEVERITY_RANK.get(finding.severity.upper(), 0),
+            finding.cvss_score or 0.0,
+            len(finding.vulnerable_symbols),
+            len(finding.summary),
+        )
+
+    best: dict[str, VulnerabilityFinding] = {}
+    for finding in findings:
+        # Group by CVE when there is one; otherwise the advisory is its own key.
+        key = f"{finding.package}:{finding.cve_id or finding.id}"
+        current = best.get(key)
+        if current is None or informativeness(finding) > informativeness(current):
+            # Preserve a fixed version from whichever record has one, and keep
+            # the lowest — that is the earliest release containing the fix.
+            if current is not None and current.fixed_version and not finding.fixed_version:
+                finding.fixed_version = current.fixed_version
+            best[key] = finding
+        elif current.fixed_version is None and finding.fixed_version:
+            current.fixed_version = finding.fixed_version
+
+    return list(best.values())
 
 
 def _summarise(result: ScanResult) -> None:

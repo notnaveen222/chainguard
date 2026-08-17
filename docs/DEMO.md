@@ -77,8 +77,8 @@ D:\college-project\demo\vulnerable-app
 
 **Point at, in order:**
 
-1. **The headline band.** "180 advisories reported → 6 actually reachable. 97%
-   ruled out." That number is the project's central empirical claim.
+1. **The headline band.** "92 advisories reported → 3 actually reachable. 97%
+   ruled out." That ratio is the project's central empirical claim.
 
 2. **The vulnerability table, filtered to "Reachable".** Expand the PyYAML row.
    Show the **proof path**:
@@ -94,8 +94,8 @@ D:\college-project\demo\vulnerable-app
    *reason*: `pillow` is never imported; `jinja2` is imported but its vulnerable
    API is never called. Emphasise: these are **de-prioritised, not dismissed**.
 
-4. **The remediation plan.** Point out that `pyyaml` (6 fixes, all reachable) is
-   ranked **above** `pillow` (108 fixes, none reachable). Ordering by raw count
+4. **The remediation plan.** Point out that `pyyaml` (3 fixes, all reachable) is
+   ranked **above** `pillow` (56 fixes, none reachable). Ordering by raw count
    would invert that and send the developer to fix the wrong thing first.
 
 ---
