@@ -60,7 +60,13 @@ python -m chainguard scan-project demo\vulnerable-app
 
 ### Web dashboard
 
-Start the API:
+Start everything with one command:
+
+```bash
+powershell -ExecutionPolicy Bypass -File scripts\start.ps1
+```
+
+Or start the two services yourself. The API:
 
 ```bash
 python -m uvicorn chainguard.api.app:app --port 8000
