@@ -15,9 +15,10 @@ complete historical result without a five-way join.
 from __future__ import annotations
 
 import json
+from collections.abc import Iterator
 from contextlib import contextmanager
 from datetime import datetime, timezone
-from typing import Any, Iterator, Optional
+from typing import Any, Optional
 
 from sqlalchemy import (
     Boolean,

@@ -410,7 +410,19 @@ class OSVClient:
                 logger.warning("OSV batch query failed: %s", exc)
                 continue
 
-            for ref, result in zip(chunk, (document or {}).get("results") or []):
+            # OSV returns one result per query, positionally. If it ever returns
+            # fewer, a plain zip() would silently drop the tail — packages would
+            # simply appear to have no advisories, which is a false all-clear
+            # rather than a visible failure. The mismatch is checked explicitly.
+            batch_results = (document or {}).get("results") or []
+            if len(batch_results) != len(chunk):
+                logger.warning(
+                    "OSV returned %d results for %d queries; %d package(s) in this "
+                    "batch were not checked for vulnerabilities",
+                    len(batch_results), len(chunk), len(chunk) - len(batch_results),
+                )
+
+            for ref, result in zip(chunk, batch_results):
                 for entry in (result or {}).get("vulns") or []:
                     vuln_id = str(entry.get("id", ""))
                     if vuln_id:

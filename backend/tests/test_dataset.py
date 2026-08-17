@@ -8,7 +8,7 @@ failure would be invisible — the numbers would simply look excellent.
 
 from __future__ import annotations
 
-from chainguard.analysis.features import FEATURE_NAMES, PackageFeatures, SCHEMA_VERSION
+from chainguard.analysis.features import FEATURE_NAMES, SCHEMA_VERSION, PackageFeatures
 from chainguard.dataset.corpus import (
     REGISTRY_ONLY_FEATURES,
     metadata_from_archive,

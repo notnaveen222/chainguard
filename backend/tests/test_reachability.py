@@ -11,12 +11,10 @@ from __future__ import annotations
 from pathlib import Path
 
 import pytest
-
-from chainguard.models.package import Ecosystem
+from chainguard.models.package import Ecosystem, PackageRef
 from chainguard.vulns.import_names import ImportNameResolver, import_names_for
 from chainguard.vulns.osv import extract_symbols, parse_vulnerability
 from chainguard.vulns.reachability import ReachabilityAnalyser, Verdict
-from chainguard.models.package import PackageRef
 
 FIXTURE_FILES = {
     "main.py": """

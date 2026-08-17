@@ -24,7 +24,8 @@ Two resolution strategies, in order:
 
 from __future__ import annotations
 
-from typing import Iterable, Optional
+from collections.abc import Iterable
+from typing import Optional
 
 from chainguard.logging_setup import get_logger
 from chainguard.models.package import Ecosystem, PackageContents
@@ -204,7 +205,7 @@ def any_imported(
     resolver: ImportNameResolver,
     distribution: str,
     ecosystem: Ecosystem,
-    lookup: "Iterable[str]",
+    lookup: Iterable[str],
 ) -> set[str]:
     """Return which of a distribution's module names appear in ``lookup``."""
     candidates = {n.lower() for n in resolver.resolve(distribution, ecosystem)}

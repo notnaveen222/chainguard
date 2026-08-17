@@ -24,7 +24,7 @@ from rich.table import Table
 from chainguard import __version__
 from chainguard.logging_setup import setup_logging
 from chainguard.models.package import Ecosystem
-from chainguard.scanner import ScanResult, Scanner, build_remediation_plan
+from chainguard.scanner import Scanner, ScanResult, build_remediation_plan
 
 app = typer.Typer(
     add_completion=False,

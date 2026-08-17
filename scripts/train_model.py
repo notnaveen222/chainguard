@@ -16,14 +16,6 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "backend"))
 
-import numpy as np  # noqa: E402
-from sklearn.metrics import (  # noqa: E402
-    average_precision_score,
-    precision_recall_curve,
-    roc_auc_score,
-    roc_curve,
-)
-
 from chainguard.config import get_settings  # noqa: E402
 from chainguard.logging_setup import get_logger  # noqa: E402
 from chainguard.ml import plots  # noqa: E402
@@ -36,6 +28,12 @@ from chainguard.ml.train import (  # noqa: E402
     load_dataset,
     run_ablation,
     train_final,
+)
+from sklearn.metrics import (  # noqa: E402
+    average_precision_score,
+    precision_recall_curve,
+    roc_auc_score,
+    roc_curve,
 )
 
 logger = get_logger("train_model")

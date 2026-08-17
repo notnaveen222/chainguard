@@ -37,9 +37,10 @@ from __future__ import annotations
 import hashlib
 import json
 import zlib
+from collections.abc import Iterator
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import Iterator, Optional
+from typing import Optional
 
 from chainguard.config import get_settings
 from chainguard.logging_setup import get_logger

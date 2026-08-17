@@ -77,6 +77,9 @@ class Version:
             return True
         if not self.prerelease and other.prerelease:
             return False
+        # Shortest-wins is deliberate: SemVer §11 compares identifiers pairwise
+        # over the common prefix, then breaks ties on length. `strict=` would be
+        # wrong here.
         for mine, theirs in zip(self.prerelease, other.prerelease):
             if mine == theirs:
                 continue

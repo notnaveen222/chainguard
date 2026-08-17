@@ -24,7 +24,7 @@ from chainguard.logging_setup import get_logger
 from chainguard.ml.model import MODEL_FILENAME, MalwareClassifier
 from chainguard.models.db import save_scan
 from chainguard.models.package import Ecosystem
-from chainguard.scanner import ScanResult, Scanner, build_remediation_plan
+from chainguard.scanner import Scanner, ScanResult, build_remediation_plan
 
 logger = get_logger(__name__)
 

@@ -12,7 +12,8 @@ file was clean.
 
 from __future__ import annotations
 
-from typing import Any, Iterator, Optional
+from collections.abc import Iterator
+from typing import Any, Optional
 
 import esprima
 
@@ -546,12 +547,19 @@ def analyse_javascript_file(path: str, source: str) -> FileAnalysis:
             path, len(source), analysis.is_minified,
         )
     else:
+        parse_errors: list[str] = []
         for parser in (esprima.parseModule, esprima.parseScript):
             try:
                 tree = parser(source, {"loc": True, "tolerant": True})
                 break
-            except Exception:  # noqa: BLE001 — esprima raises bare Error subclasses
-                continue
+            except Exception as exc:  # noqa: BLE001 — esprima raises bare Error subclasses
+                # Failing as a module then as a script is the normal path for
+                # plain CommonJS, so this is expected rather than exceptional.
+                # Recorded and logged once below instead of per attempt.
+                parse_errors.append(str(exc)[:120])
+
+        if tree is None and parse_errors:
+            logger.debug("Could not parse %s as JavaScript: %s", path, parse_errors[-1])
 
     if tree is None:
         # Newer syntax, TypeScript, deliberately malformed source, or a file too

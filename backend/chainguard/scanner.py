@@ -25,8 +25,9 @@ from __future__ import annotations
 import asyncio
 import time
 import uuid
+from collections.abc import Callable
 from pathlib import Path
-from typing import Any, Callable, Optional
+from typing import Any, Optional
 
 from pydantic import BaseModel, Field
 
@@ -37,7 +38,6 @@ from chainguard.llm.explain import explain_package
 from chainguard.logging_setup import get_logger
 from chainguard.ml.model import MalwareClassifier
 from chainguard.models.package import (
-    DependencyGraph,
     Ecosystem,
     PackageRef,
 )
@@ -297,8 +297,10 @@ class Scanner:
     def _report(self, stage: str, pct: float, message: str) -> None:
         try:
             self.progress(stage, pct, message)
-        except Exception:  # noqa: BLE001 — a broken progress sink must not fail a scan
-            pass
+        except Exception as exc:  # noqa: BLE001 — a broken sink must not fail a scan
+            # Logged rather than swallowed: a progress callback that always
+            # raises would otherwise leave the UI frozen with no explanation.
+            logger.debug("Progress callback raised: %s", exc)
 
     # ------------------------------------------------------------------ #
 

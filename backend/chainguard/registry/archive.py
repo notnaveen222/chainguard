@@ -22,8 +22,9 @@ from __future__ import annotations
 import io
 import tarfile
 import zipfile
+from collections.abc import Iterator
 from dataclasses import dataclass
-from typing import Iterator, Optional
+from typing import Optional
 
 from chainguard.config import AnalysisLimits, get_settings
 from chainguard.logging_setup import get_logger

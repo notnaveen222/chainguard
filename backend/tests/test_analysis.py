@@ -12,7 +12,6 @@ regressions returning, and each names the package that motivated it.
 from __future__ import annotations
 
 import pytest
-
 from chainguard.analysis.engine import analyse_source_text
 from chainguard.analysis.indicators import (
     looks_like_encoded_payload,

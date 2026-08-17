@@ -104,7 +104,7 @@ def render_report(result: ScanResult, generated_at: Optional[datetime] = None) -
         "<meta name='viewport' content='width=device-width, initial-scale=1'>",
         f"<title>ChainGuard report — {_esc(result.target)}</title>",
         f"<style>{_STYLES}</style></head><body><div class='wrap'>",
-        f"<h1>ChainGuard scan report</h1>",
+        "<h1>ChainGuard scan report</h1>",
         f"<p class='sub'><strong>{_esc(result.target)}</strong> · "
         f"{_esc(result.ecosystem)} · generated {stamp} · "
         f"scan took {result.duration_seconds:.1f}s · "

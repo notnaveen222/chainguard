@@ -56,10 +56,11 @@ from __future__ import annotations
 
 import ast
 import re
+from collections.abc import Iterable
 from dataclasses import dataclass, field
 from enum import Enum
 from pathlib import Path
-from typing import Iterable, Optional
+from typing import Optional
 
 from chainguard.logging_setup import get_logger
 from chainguard.models.package import Ecosystem
@@ -690,7 +691,7 @@ class ReachabilityAnalyser:
         self,
         project_root: Path,
         ecosystem: Ecosystem,
-        resolver: Optional["ImportNameResolver"] = None,
+        resolver: Optional[ImportNameResolver] = None,
     ) -> None:
         self.project_root = project_root
         self.ecosystem = ecosystem
@@ -734,7 +735,16 @@ class ReachabilityAnalyser:
 
     def _analyse_python(self, package: str, symbols: list[str]) -> ReachabilityResult:
         graph = self.python_graph
-        assert graph is not None
+        if graph is None:
+            # `available` should already have caught this, but an assert would be
+            # stripped under `python -O` — and the failure mode is a crash during
+            # a scan rather than a caught, reported gap.
+            return ReachabilityResult(
+                package=package,
+                verdict=Verdict.NOT_ANALYSED,
+                reason="The Python call graph was not built for this scan",
+                confidence="none",
+            )
 
         aliases = self.resolver.resolve(package, Ecosystem.PYPI)
         importers = graph.imports_package(package, aliases)
@@ -786,7 +796,13 @@ class ReachabilityAnalyser:
 
     def _analyse_javascript(self, package: str, symbols: list[str]) -> ReachabilityResult:
         graph = self.js_graph
-        assert graph is not None
+        if graph is None:
+            return ReachabilityResult(
+                package=package,
+                verdict=Verdict.NOT_ANALYSED,
+                reason="The JavaScript import graph was not built for this scan",
+                confidence="none",
+            )
 
         importers = graph.imports_package(package)
         if not importers:

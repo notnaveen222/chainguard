@@ -134,7 +134,9 @@ class MaliciousSampleSource:
             by_package.setdefault(sample.package, sample)
 
         unique = sorted(by_package.values(), key=lambda s: s.path)
-        random.Random(seed).shuffle(unique)
+        # Deterministic sampling, not a security primitive — the fixed seed is
+        # the point, so a rebuild reproduces the same dataset.
+        random.Random(seed).shuffle(unique)  # noqa: S311
         selected = unique[:limit]
 
         logger.info(

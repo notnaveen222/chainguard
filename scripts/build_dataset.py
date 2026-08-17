@@ -63,7 +63,9 @@ async def acquire(vault: SampleVault, malicious_per_eco: int, benign_per_eco: in
             # packages starting with "a" — a benign corpus biased by name rather
             # than representative of real library code.
             all_names = load_popular_names(ecosystem)
-            random.Random(BENIGN_SEED).shuffle(all_names)
+            # Deterministic sampling, not a security primitive — a fixed seed is
+            # the point, so the dataset is reproducible.
+            random.Random(BENIGN_SEED).shuffle(all_names)  # noqa: S311
             names = all_names[:benign_per_eco]
             stored = await collect_benign(vault, http, ecosystem, names)
             logger.info("  benign stored   : %d", stored)

@@ -12,13 +12,11 @@ import tarfile
 import zipfile
 
 import pytest
-
 from chainguard.config import AnalysisLimits
+from chainguard.models.package import Ecosystem
 from chainguard.registry import semver
 from chainguard.registry.archive import ArchiveError, extract, extract_tarball, extract_zip
 from chainguard.registry.manifest import ManifestError, parse_manifest
-from chainguard.models.package import Ecosystem
-
 
 # --------------------------------------------------------------------------- #
 # semver

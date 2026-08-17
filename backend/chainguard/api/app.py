@@ -232,7 +232,11 @@ async def scan_project(request: ProjectScanRequest) -> dict[str, Any]:
     the dependency list and the application code.
     """
     root = _resolve_project_root(request.path)
-    assert root is not None
+    if root is None:
+        # `path` is required on this model, so this is unreachable — but an
+        # assert would be stripped under `python -O`, turning a clear 400 into
+        # an AttributeError further down.
+        raise HTTPException(400, "A project path is required")
 
     from chainguard.registry.manifest import detect_project_manifests
 

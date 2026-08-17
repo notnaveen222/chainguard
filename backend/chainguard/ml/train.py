@@ -252,13 +252,17 @@ def run_ablation(
     return results
 
 
-def train_final(dataset: Dataset, algorithm: str = "gradient_boosting") -> tuple[Any, list[tuple[str, float]]]:
+def train_final(
+    dataset: Dataset, algorithm: str = "gradient_boosting"
+) -> tuple[Any, list[tuple[str, float]]]:
     """Fit the deployed model on all data, with probability calibration."""
     base = _build_estimator(algorithm)
     base.fit(dataset.X, dataset.y)
 
+    # strict=True: a length mismatch here would silently mislabel every feature
+    # importance, producing a chart that looks fine and is entirely wrong.
     importances = sorted(
-        zip(dataset.feature_names, base.feature_importances_),
+        zip(dataset.feature_names, base.feature_importances_, strict=True),
         key=lambda item: -item[1],
     )
     importances = [(name, round(float(value), 6)) for name, value in importances]
