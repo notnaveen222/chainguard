@@ -234,5 +234,143 @@ is surfaced in the result rather than swallowed.
 
 ---
 
+## 2026-08-17 — Phase 2: Detection engine
+
+**Built:** the signal catalogue (40 signal types across 10 categories), Python
+and JavaScript AST analysers, shell analysis for npm lifecycle hooks, typosquat
+detection, the 55-feature vector, and the orchestrating engine.
+
+### D-019 — Signals carry evidence, not just a score
+
+**Decision:** Every detection records its file, line, source snippet and a
+human-readable explanation, and the same signal set drives both the feature
+vector and the report.
+
+**Rationale:** A malice score with nothing behind it is unauditable. An examiner
+asking "why did it flag this?" needs a better answer than "the model said so".
+This also makes the false-positive work below possible — without per-signal
+attribution there is no way to find out *what* was wrong.
+
+### D-020 — AST parsing rather than pattern matching
+
+**Decision:** Parse both languages properly (`ast` for Python, `esprima` for JS)
+rather than grepping for dangerous strings.
+
+**Rationale:** A regex for `eval(` matches the word in a comment, a docstring, or
+a variable named `evaluate`. An AST sees a genuine call node. More importantly it
+resolves aliases: `import subprocess as sp` then `sp.run(...)` is invisible to
+text search. Parsing is also safe — `ast.parse` builds a tree without executing
+anything, which is what makes static analysis of hostile code possible at all.
+
+**Degradation, not failure:** `esprima` covers ES5/ES6 and rejects newer syntax
+and TypeScript. A parse failure falls back to text-level scanning and sets
+`parse_failed`, so the feature vector reflects *reduced visibility* rather than
+reporting a clean result it did not actually verify.
+
+### D-021 — Composite signals are the precise ones
+
+**Decision:** Per-file analysers record behaviour *flags*; a second pass derives
+co-occurrence signals (`EXFIL_CREDENTIALS_TO_NETWORK`, `EXFIL_ON_INSTALL`,
+`REVERSE_SHELL_PATTERN`) from them.
+
+**Rationale:** Reading the environment is unremarkable. Making an HTTP request is
+unremarkable. Doing both in one file is the shape of credential theft. No
+individual detector can observe that composition.
+
+**This is validated by measurement.** Across twelve real packages (express,
+chalk, debug, commander, axios, webpack, requests, click, urllib3, flask, pyyaml,
+rich), **not one** composite signal fired. On the synthetic malicious samples,
+they fired immediately and dominated the score. Individual sinks are noisy;
+composition is precise.
+
+`EXFIL_ENV_TO_NETWORK` additionally requires a third corroborating behaviour
+(host reconnaissance, or the file running at install time), because environment
+access plus network is genuinely common in benign configuration-loading code.
+
+### D-022 — Detector thresholds were corrected against real packages
+
+The initial thresholds were set by intuition and were measurably wrong. Running
+the engine over twelve popular real packages exposed systematic false positives,
+each of which was traced and fixed:
+
+| Problem found | Cause | Fix |
+|---|---|---|
+| `HIGH_ENTROPY_STRING` fired 19× in `urllib3`, 40× in `webpack` | entropy > 4.5 over any 100-char literal — real code is full of long high-entropy strings | require length ≥ 180, whitespace < 2%, encoded alphabet ≥ 92%, entropy > 4.8 |
+| `CRYPTO_WALLET_ACCESS` fired on `urllib3` and `rich` | pattern included generic `private_key`/`mnemonic`, ubiquitous in TLS and crypto code | restricted to wallet-*specific* artefacts only |
+| `ENV_BULK_HARVEST` fired on `express`, `debug`, `axios`, `webpack` | **bug** — the AST walk visits `process.env` as a sub-expression of every `process.env.FOO`, so named reads were counted as whole-environment reads | track which nodes are the base of a longer member chain; flag only genuinely standalone `process.env` |
+| `SETUP_PY_SIDE_EFFECTS` fired 4× on `pyyaml` | flagged *any* module-level statement; real `setup.py` files legitimately contain import guards, version parsing and platform branches | flag only statements containing calls into a process/network/exec sink |
+| `BASE64_BLOB` fired 5× in `axios`, 9× in `webpack` | 60-character minimum matched hashes, integrity digests and source-map fragments | raised to 120 characters |
+| `CHARCODE_OBFUSCATION` fired on `axios`, `webpack` | single `String.fromCharCode` call — routine in parsers and encoders | require ≥ 5 occurrences in one file |
+| `HEX_ESCAPE_HEAVY` fired on `pyyaml`, `rich` | raw count > 40 — unicode tables exceed that legitimately | density-based: escapes must exceed 15% of file content |
+
+Signal weights were also lowered where measurement showed the original prior was
+unjustifiable (`DYNAMIC_EVAL` 2.5→1.5, `SENSITIVE_PATH_ACCESS` 4.5→3.0,
+`HOST_RECON` 1.8→1.0, and others). Each lowered weight carries an inline comment
+naming the packages that motivated it, because a tuned constant with no evidence
+attached is indistinguishable from a guess.
+
+**Result:** real packages moved from 0.40–1.00 down to 0.00–0.41, while the
+synthetic malicious samples stayed at 0.99 and 1.00.
+
+### D-023 — `webpack` remains a baseline false positive, and that is the point
+
+`webpack` still scores 1.00 on the rules baseline. It ships 688 files and
+genuinely writes to system paths, spawns processes, reads the environment and
+calls `eval` — every individual signal is a *true* observation.
+
+This is not treated as a bug to be tuned away. It is the clearest possible
+demonstration of why the ML layer exists: a weighted-sum baseline cannot learn
+that these behaviours are unremarkable in a large, mature, widely-depended-upon
+build tool but alarming in a three-file package published yesterday. Suppressing
+it with a hand-tuned exception would hide exactly the phenomenon the evaluation
+needs to measure.
+
+### D-024 — A critical *signal* is not a malicious *verdict*
+
+`requests` triggers a critical-severity `SENSITIVE_PATH_ACCESS` because it reads
+`.netrc` — which it genuinely does, for authentication. The analyser is correct
+to observe it and correct not to escalate: no network egress occurs in that file,
+so no exfiltration composite fires, and the package scores 0.36.
+
+Severity describes how alarming a behaviour is *in isolation*. Only the aggregate
+score and the composites constitute a verdict. The test suite asserts on the
+verdict, never on the presence of an individual signal.
+
+### D-025 — Typosquat detection combines four mechanisms
+
+Edit distance alone is insufficient. The implementation adds keyboard-adjacency
+weighting (adjacent-key substitutions cost 0.6, not 1.0, so `reqeusts` ranks
+closer to `requests` than an arbitrary edit), transposition at 0.6 (the single
+most common typing error), homoglyph substitution, separator swaps, affix
+addition/removal, and scope confusion. Names on the popular list are never
+flagged against themselves, and names shorter than five characters are excluded
+because at that length almost everything is within distance 2 of something.
+
+The ground-truth list (614 npm + 518 PyPI names) is generated by
+`scripts/build_popular_packages.py` and committed, so scans are reproducible and
+work offline. Regenerating it changes detection behaviour, so it is a deliberate
+versioned action rather than something done at scan time.
+
+### D-026 — Feature schema is versioned and every column is nameable
+
+**Decision:** 55 features in a fixed order, with `SCHEMA_VERSION` persisted
+alongside the trained model, and no anonymous dimensions.
+
+**Rationale:** A model trained on schema v1 fed a v2 vector produces confident
+nonsense rather than an error, so the version is checked at inference. Every
+feature maps to something explainable, which is what makes the
+feature-importance chart meaningful. Counts are `log1p`-compressed so that large
+legitimate libraries do not dominate the feature space purely by being large.
+
+### D-027 — Vendored and test directories are excluded from analysis
+
+`node_modules`, `test/`, `__pycache__`, `vendor/`, `examples/` and similar are
+skipped. Analysing them attributes another project's behaviour to this package
+and inflates every count — test fixtures in particular are full of deliberately
+odd strings.
+
+---
+
 <!-- New entries are appended below as work proceeds. -->
+
 
