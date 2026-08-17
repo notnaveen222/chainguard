@@ -7,33 +7,31 @@ ChainGuard scans a project's dependency tree and answers two questions that
 existing tooling answers badly:
 
 1. **Is any of this deliberately malicious?** A machine-learning classifier over
-   static-analysis features detects typosquats, install-time payloads, obfuscated
-   code and credential exfiltration — including in packages it has never seen.
-2. **Which of the reported CVEs actually matter?** Rather than dumping 300
-   advisories on a developer, ChainGuard performs **reachability analysis**:
-   it builds a call graph of the application and determines whether each
-   vulnerable function is genuinely invoked, then shows the call path as proof.
+   55 static-analysis features detects typosquats, install-time payloads,
+   obfuscated code and credential exfiltration — including in packages it has
+   never seen.
+2. **Which of the reported CVEs actually matter?** Rather than dumping 180
+   advisories on a developer, ChainGuard performs **reachability analysis**: it
+   builds a call graph of the application, determines whether each vulnerable
+   function is genuinely invoked, and shows the call path as proof.
 
-The second is the project's central claim. Most reported vulnerabilities in a
-dependency tree are unreachable from the application, and reporting them without
-that distinction is why known-vulnerable dependencies stay unpatched — the signal
-drowns in noise.
+On the bundled demo project, the second question turns **180 reported advisories
+into 6 that are actually reachable** — with a proof path for each:
 
----
+```
+app → app.main → app.bootstrap → config.load_settings → yaml.load
+```
 
-## Documentation
-
-| Document | Contents |
-|---|---|
-| [ARCHITECTURE.md](ARCHITECTURE.md) | System design, component responsibilities, technology rationale, evaluation plan |
-| [BUILD_LOG.md](BUILD_LOG.md) | Chronological record of every design decision and the alternatives rejected |
-| [PROGRESS.md](PROGRESS.md) | Current build state |
+That reduction is the project's central claim. Most vulnerabilities in a
+dependency tree cannot be reached from the application, and reporting them
+without that distinction is why known-vulnerable dependencies stay unpatched:
+the signal drowns in noise.
 
 ---
 
 ## Quick start
 
-Requires Python 3.10+ and Node 18+ (Node is for the dashboard only; the backend
+Requires Python 3.10+ and Node 18+ (Node is for the dashboard only — the backend
 has no Node dependency).
 
 ```bash
@@ -48,29 +46,151 @@ python -m venv .venv
 pip install -r requirements.txt
 ```
 
-Everything else is optional — ChainGuard runs with no configuration file, no API
-key, and no database setup.
+Run the test suite — it is fully offline and takes under a second:
+
+```bash
+python -m pytest backend/tests -q
+```
+
+Scan the demo project from the command line:
+
+```bash
+python -m chainguard scan-project demo\vulnerable-app
+```
+
+### Web dashboard
+
+Start the API:
+
+```bash
+python -m uvicorn chainguard.api.app:app --port 8000
+```
+
+Then the dashboard, in a second terminal:
+
+```bash
+cd frontend && npm install && npm run dev
+```
+
+Open <http://localhost:5173>. Interactive API docs are at
+<http://localhost:8000/docs>.
+
+### Training the classifier (optional)
+
+ChainGuard runs without a trained model, falling back to a rules baseline and
+saying so in every result. To train the real classifier:
+
+```bash
+python scripts/build_dataset.py --malicious 450 --benign 450
+```
+
+```bash
+python scripts/train_model.py
+```
+
+The dataset build downloads ~1,800 packages and takes roughly an hour. See
+[docs/DATASET.md](docs/DATASET.md).
+
+---
+
+## How it works
+
+```
+  manifest ──▶ resolve dependency tree ──▶ download packages (in memory)
+                                                    │
+                        ┌───────────────────────────┴───────────────────────┐
+                        ▼                                                   ▼
+             STATIC ANALYSIS                                    OSV.dev ADVISORIES
+      Python AST · JavaScript AST                          CVSS · fixed versions
+      install hooks · typosquatting                        vulnerable symbols
+                        │                                                   │
+                        ▼                                                   ▼
+             55-feature vector                              REACHABILITY ANALYSIS
+                        │                                   call graph of your code
+                        ▼                                   ↓          ↓
+              ML CLASSIFIER                            REACHABLE   not reachable
+        malice score + evidence                        + proof      + reason
+                        │                                                   │
+                        └───────────────────┬───────────────────────────────┘
+                                            ▼
+                              risk report · remediation plan
+```
+
+Detection and reachability are independent: a failure in one does not take out
+the other.
+
+---
+
+## Documentation
+
+| Document | Contents |
+|---|---|
+| [ARCHITECTURE.md](ARCHITECTURE.md) | System design, component rationale, technology choices, evaluation plan |
+| [BUILD_LOG.md](BUILD_LOG.md) | Every design decision, the alternatives rejected, and the bugs found along the way |
+| [docs/DATASET.md](docs/DATASET.md) | Training data provenance, label-leakage prevention, known limitations |
+| [docs/DEMO.md](docs/DEMO.md) | Ten-minute walkthrough for a review panel |
+| [PROGRESS.md](PROGRESS.md) | Build state |
+
+---
+
+## What this does *not* do
+
+Stated plainly, because a security tool that overstates its certainty is worse
+than one that admits a gap.
+
+- **npm reachability is import-level only.** ChainGuard reports whether a
+  vulnerable package is imported and by which files, but does not verify symbol
+  use for JavaScript. Full JS call-graph construction across dynamic `require`,
+  bundlers and monkey-patching is a research problem in its own right.
+- **"Not statically reachable" is weaker than "not exploitable."** The analysis
+  does not resolve dynamic dispatch, `getattr` indirection, reflection, or calls
+  made from templates and configuration.
+- **Uncertainty always resolves to *reachable*.** A false "reachable" costs an
+  engineer ten minutes; a false "unreachable" hides a real vulnerability. The two
+  errors are not symmetric, so every ambiguous case is reported.
+- **Vulnerable-symbol data is incomplete.** npm and PyPI advisories rarely carry
+  structured symbol information. Symbols come from advisory data, a curated table
+  of ~35 packages, or parsing advisory prose — and every finding reports which,
+  because a verdict is only as good as the symbol list behind it.
 
 ---
 
 ## Security notice
 
 ChainGuard analyses hostile input by design, and its training data contains real
-malicious packages. Two invariants hold throughout the codebase:
+malicious packages. Two invariants hold throughout:
 
 - **Nothing analysed is ever executed.** No `pip install`, no `npm install`, no
   `setup.py` invocation, no `eval` of package content. All analysis is static
   parsing of source text.
 - **Malicious samples are encoded at rest.** Training samples under
   `data/quarantine/` are never written to disk in runnable form and are decoded
-  into memory only. See [`data/quarantine/README.md`](data/quarantine/README.md).
+  into memory only — so no antivirus exclusion is required and no security
+  setting on the host was changed. See
+  [`data/quarantine/README.md`](data/quarantine/README.md).
 
-Resource ceilings on archive size, compression ratio, file count and parse time
-are security controls against zip bombs and parser denial-of-service, since the
-scanner is itself an attack surface. They live in `chainguard/config.py`.
+The scanner is itself an attack surface, so ingestion is bounded at every step:
+archive size, compression ratio, member count, per-file size, AST parse size, and
+per-package analysis time. Path traversal, symlinks and absolute paths are
+rejected during extraction. These are security controls, not performance tuning —
+see `backend/chainguard/config.py`.
 
 ---
 
-## Project status
+## Repository layout
 
-Under active construction. See [PROGRESS.md](PROGRESS.md) for the current phase.
+```
+backend/chainguard/
+  analysis/    static analysers, signal catalogue, feature extraction, typosquatting
+  registry/    npm + PyPI clients, semver, manifests, archives, dependency resolver
+  vulns/       OSV client, reachability engine, import-name resolution
+  dataset/     encoded sample vault, corpus construction
+  ml/          training, evaluation, inference
+  api/         FastAPI service and background jobs
+  scanner.py   scan orchestration
+  cli.py       command-line interface
+frontend/      React + Vite + Tailwind dashboard
+demo/          sample vulnerable project for the reachability demonstration
+scripts/       dataset build, model training, popular-package list generation
+docs/          dataset notes, demo script, model card
+```

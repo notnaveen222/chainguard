@@ -51,6 +51,14 @@ RECON_MODULES = frozenset({"os", "systeminformation", "node-machine-id"})
 #: Third-party HTTP clients.
 HTTP_LIBRARIES = frozenset({"axios", "node-fetch", "got", "request", "superagent", "undici"})
 
+#: Above these sizes the AST parse is skipped and analysis falls back to text
+#: scanning. Minified bundles get the tighter limit because they are a single
+#: enormous expression, which is the pathological case for a recursive-descent
+#: parser. Both are deliberately generous — real hand-written source is far
+#: smaller, so this only trips on build output and deliberate parser bombs.
+_PARSE_BYTE_LIMIT = 1_000_000
+_MINIFIED_PARSE_BYTE_LIMIT = 300_000
+
 PROCESS_CALLS = frozenset(
     {"exec", "execSync", "spawn", "spawnSync", "execFile", "execFileSync", "fork"}
 )
@@ -517,19 +525,40 @@ def analyse_javascript_file(path: str, source: str) -> FileAnalysis:
 
     _analyse_text_level(analysis, source)
 
+    # esprima is a pure-Python parser, so its cost grows steeply with input size
+    # and it is effectively unbounded on large minified bundles — a single 2 MB
+    # one-line file can spin for many minutes. That is a denial-of-service on the
+    # analyser, and the scanner processes hostile input by design, so the guard
+    # is a security control rather than a performance tweak.
+    #
+    # Observed during the dataset build: analysis pegged one CPU indefinitely on a
+    # single file, because the per-package timeout is only checked *between*
+    # files and cannot interrupt one parse. Windows has no signal-based alarm, so
+    # the limit has to be applied before parsing starts.
+    too_large_to_parse = len(source) > _PARSE_BYTE_LIMIT or (
+        analysis.is_minified and len(source) > _MINIFIED_PARSE_BYTE_LIMIT
+    )
+
     tree = None
-    for parser in (esprima.parseModule, esprima.parseScript):
-        try:
-            tree = parser(source, {"loc": True, "tolerant": True})
-            break
-        except Exception:  # noqa: BLE001 — esprima raises bare Error subclasses
-            continue
+    if too_large_to_parse:
+        logger.debug(
+            "Skipping AST parse of %s (%d bytes, minified=%s); text scan only",
+            path, len(source), analysis.is_minified,
+        )
+    else:
+        for parser in (esprima.parseModule, esprima.parseScript):
+            try:
+                tree = parser(source, {"loc": True, "tolerant": True})
+                break
+            except Exception:  # noqa: BLE001 — esprima raises bare Error subclasses
+                continue
 
     if tree is None:
-        # Newer syntax, TypeScript, or deliberately malformed source. Text-level
-        # findings still apply; the flag lets the model account for the gap.
+        # Newer syntax, TypeScript, deliberately malformed source, or a file too
+        # large to parse safely. Text-level findings still apply; the flag lets
+        # the model account for the reduced visibility rather than treating the
+        # file as clean.
         analysis.parse_failed = True
-        logger.debug("Could not parse %s as JavaScript", path)
         _analyse_literals(analysis, [(source[:20000], 0)])
         return analysis
 
