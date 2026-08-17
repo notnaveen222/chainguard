@@ -143,4 +143,96 @@ The SQLAlchemy layer keeps the door open for PostgreSQL without rewriting querie
 
 ---
 
+## 2026-08-17 — Phase 1: Registry layer
+
+**Built:** shared cached HTTP client, safe in-memory archive extraction, npm and
+PyPI clients, an npm semver implementation, manifest/lockfile parsers, and the
+breadth-first transitive dependency resolver.
+
+**Verified against live registries:** `express@^4.18.0` resolved to 4.22.2 and
+expanded to a 49-package transitive graph; `requests` fetched as an sdist with
+`setup.py` present; `esbuild`'s `postinstall` hook detected from metadata alone.
+
+### D-012 — Hand-rolled semver rather than a library
+
+**Decision:** Implement npm's version-range grammar directly (`semver.py`).
+
+**Rationale:** The available Python semver packages implement the *specification*
+but not npm's *range grammar* — `^`, `~`, `x` wildcards, hyphen ranges, and `||`
+unions are npm inventions. ChainGuard needs exactly one operation ("given a range
+and a published version list, pick what npm would install"), so a focused
+implementation is smaller and more testable than bending a general library.
+The 0.x caret rule (`^0.2.3` → `<0.3.0`, not `<1.0.0`) is implemented explicitly
+because getting it wrong silently resolves the wrong version.
+
+### D-013 — Full packuments, not the abbreviated form
+
+**Decision:** Request npm's full registry document rather than
+`application/vnd.npm.install-v1+json`.
+
+**Rationale:** The abbreviated document reports `hasInstallScript` as a boolean.
+ChainGuard needs the *script body* — the command text in `postinstall` is one of
+the strongest malicious signals available, and a boolean throws it away. The
+payload is larger, but responses are cached, so the cost is one download per
+package rather than per scan.
+
+### D-014 — Prefer sdists over wheels on PyPI
+
+**Decision:** When both are published, download the source distribution.
+
+**Rationale:** A wheel is a *built* artifact and has already discarded
+`setup.py` — which is exactly the file a malicious PyPI package uses to execute
+code at install time. Analysing only wheels would blind the detector to the most
+common Python supply-chain attack vector. Wheels are used only as a fallback.
+
+### D-015 — Archive extraction is a security boundary
+
+**Decision:** Extraction enforces four independent ceilings (uncompressed size,
+compression ratio, member count, per-file size) and drops unsafe members
+(path traversal, absolute paths, symlinks, non-regular files).
+
+**Rationale:** The scanner ingests deliberately hostile archives, so it is itself
+an attack surface. A zip bomb or a symlink to `/etc/passwd` must degrade to a
+*truncated result*, never to a crash or a traversal. Size accounting happens
+before decompression, which is what makes the bomb guard real rather than
+cosmetic. Truncation is recorded on the result so downstream consumers know the
+analysis was partial rather than clean.
+
+### D-016 — Lockfiles take precedence over manifests
+
+**Decision:** When a lockfile is present, resolve from its pinned versions and do
+not re-resolve ranges.
+
+**Rationale:** A manifest declares ranges; a lockfile records what is actually
+installed. Re-resolving `^4.17.0` today may pick a different version than the one
+on the developer's disk, and reporting vulnerabilities for a version the user
+does not have is a false result in both directions.
+
+**Known limitation:** a flat lockfile does not preserve depth, so lockfile-derived
+graphs record every package at depth 0. Depth-based risk weighting is therefore
+weaker for lockfile scans — documented rather than silently wrong.
+
+### D-017 — Breadth-first resolution
+
+**Decision:** Walk the dependency graph breadth-first.
+
+**Rationale:** BFS reaches each package by its shallowest path first, which is the
+correct depth to keep for risk weighting — a direct dependency is more the
+developer's problem than one buried five levels down. It also makes the package
+ceiling meaningful: truncating a BFS drops the deepest, least relevant packages,
+whereas truncating a DFS drops an arbitrary subtree.
+
+### D-018 — Failures are isolated per package, never fatal
+
+**Decision:** `gather()` returns exceptions in place rather than raising, and
+unresolvable requirements are recorded in `graph.unresolved`.
+
+**Rationale:** A scan of 500 packages will always contain something deleted,
+yanked, or published with broken metadata. One bad package must not abort the
+scan. Equally, silently dropping it would overstate coverage — so every failure
+is surfaced in the result rather than swallowed.
+
+---
+
 <!-- New entries are appended below as work proceeds. -->
+
