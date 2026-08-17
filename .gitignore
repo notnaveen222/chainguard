@@ -28,13 +28,17 @@ npm-debug.log*
 # never executed by this project — but they must never be committed either.
 # See docs/DATASET.md and data/quarantine/README.md.
 # ---------------------------------------------------------------------------
-data/quarantine/
+# Note the trailing /* rather than /: git cannot re-include a file inside an
+# excluded *directory*, so `data/quarantine/` followed by a negation would
+# silently drop the safety README that documents what is stored there.
+data/quarantine/*
+!data/quarantine/README.md
+
 data/cache/
 data/corpus/
 data/reports/
 data/models/*.joblib
 data/models/*.pkl
-!data/quarantine/README.md
 !data/models/.gitkeep
 
 # Local config / secrets
