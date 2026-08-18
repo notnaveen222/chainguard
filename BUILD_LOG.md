@@ -236,9 +236,9 @@ is surfaced in the result rather than swallowed.
 
 ## 2026-08-17 — Phase 2: Detection engine
 
-**Built:** the signal catalogue (40 signal types across 10 categories), Python
+**Built:** the signal catalogue (38 signal types across 10 categories), Python
 and JavaScript AST analysers, shell analysis for npm lifecycle hooks, typosquat
-detection, the 55-feature vector, and the orchestrating engine.
+detection, the 58-feature vector, and the orchestrating engine.
 
 ### D-019 — Signals carry evidence, not just a score
 
@@ -353,7 +353,7 @@ versioned action rather than something done at scan time.
 
 ### D-026 — Feature schema is versioned and every column is nameable
 
-**Decision:** 55 features in a fixed order, with `SCHEMA_VERSION` persisted
+**Decision:** a fixed-order feature vector (58 columns at present), with `SCHEMA_VERSION` persisted
 alongside the trained model, and no anonymous dimensions.
 
 **Rationale:** A model trained on schema v1 fed a v2 vector produces confident

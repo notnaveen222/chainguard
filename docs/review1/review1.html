@@ -1,0 +1,880 @@
+<title>ChainGuard Review 1</title>
+<style>
+  :root {
+    --paper:        #F6F7F9;
+    --surface:      #FFFFFF;
+    --surface-alt:  #EDEFF3;
+    --ink:          #171B24;
+    --ink-soft:     #4A5364;
+    --ink-faint:    #79839A;
+    --rule:         #D8DCE4;
+    --accent:       #0E6E63;
+    --accent-soft:  #E3F0EE;
+    --critical:     #A62A21;
+    --caution:      #8A5A00;
+    --clear:        #1B6B45;
+    --code-bg:      #EEF0F4;
+
+    --measure: 68ch;
+    --s1: .35rem; --s2: .7rem; --s3: 1.1rem; --s4: 1.8rem;
+    --s5: 2.8rem; --s6: 4.2rem;
+
+    --serif: Georgia, 'Iowan Old Style', 'Palatino Linotype', 'Book Antiqua', serif;
+    --sans: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+    --mono: ui-monospace, SFMono-Regular, 'Cascadia Mono', Consolas, monospace;
+  }
+
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --paper:       #101319;
+      --surface:     #171B23;
+      --surface-alt: #1D222C;
+      --ink:         #E5E9F0;
+      --ink-soft:    #A9B3C4;
+      --ink-faint:   #77839A;
+      --rule:        #2A303C;
+      --accent:      #59C7B8;
+      --accent-soft: #16302E;
+      --critical:    #E4796E;
+      --caution:     #D9A227;
+      --clear:       #5FBF8C;
+      --code-bg:     #1B212B;
+    }
+  }
+
+  :root[data-theme="dark"] {
+    --paper:       #101319;
+    --surface:     #171B23;
+    --surface-alt: #1D222C;
+    --ink:         #E5E9F0;
+    --ink-soft:    #A9B3C4;
+    --ink-faint:   #77839A;
+    --rule:        #2A303C;
+    --accent:      #59C7B8;
+    --accent-soft: #16302E;
+    --critical:    #E4796E;
+    --caution:     #D9A227;
+    --clear:       #5FBF8C;
+    --code-bg:     #1B212B;
+  }
+
+  * { box-sizing: border-box; }
+
+  body {
+    margin: 0;
+    background: var(--paper);
+    color: var(--ink);
+    font-family: var(--sans);
+    font-size: 16px;
+    line-height: 1.65;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  .wrap {
+    max-width: 78rem;
+    margin: 0 auto;
+    padding: var(--s5) var(--s4) var(--s6);
+    display: grid;
+    grid-template-columns: 15rem minmax(0, 1fr);
+    gap: var(--s5);
+    align-items: start;
+  }
+  @media (max-width: 60rem) {
+    .wrap { grid-template-columns: minmax(0, 1fr); gap: var(--s4); }
+    nav.toc { position: static !important; }
+  }
+
+  /* ---- masthead ---- */
+  header.masthead {
+    grid-column: 1 / -1;
+    border-bottom: 2px solid var(--ink);
+    padding-bottom: var(--s3);
+    margin-bottom: var(--s2);
+  }
+  .eyebrow {
+    font-size: .72rem; letter-spacing: .16em; text-transform: uppercase;
+    color: var(--accent); font-weight: 700;
+  }
+  h1 {
+    font-family: var(--serif);
+    font-size: clamp(1.9rem, 4vw, 2.9rem);
+    line-height: 1.12; margin: var(--s2) 0 var(--s1);
+    text-wrap: balance; font-weight: 700; letter-spacing: -.01em;
+  }
+  .subtitle {
+    font-family: var(--serif); font-size: 1.12rem; font-style: italic;
+    color: var(--ink-soft); margin: 0; max-width: var(--measure);
+  }
+  .rubric-strip {
+    display: flex; flex-wrap: wrap; gap: var(--s2); margin-top: var(--s3);
+  }
+  .rubric-chip {
+    display: flex; align-items: baseline; gap: .5rem;
+    background: var(--surface); border: 1px solid var(--rule);
+    border-left: 3px solid var(--accent);
+    padding: .45rem .7rem; font-size: .82rem;
+  }
+  .rubric-chip b { font-variant-numeric: tabular-nums; color: var(--accent); }
+
+  /* ---- toc ---- */
+  nav.toc {
+    position: sticky; top: var(--s3);
+    font-size: .86rem; line-height: 1.45;
+  }
+  nav.toc h2 {
+    font-size: .7rem; letter-spacing: .14em; text-transform: uppercase;
+    color: var(--ink-faint); margin: 0 0 var(--s2); font-family: var(--sans);
+    font-weight: 700; border: 0; padding: 0;
+  }
+  nav.toc ol { list-style: none; margin: 0; padding: 0; display: grid; gap: .3rem; }
+  nav.toc a {
+    color: var(--ink-soft); text-decoration: none;
+    display: block; padding: .18rem 0 .18rem .6rem;
+    border-left: 2px solid var(--rule);
+  }
+  nav.toc a:hover, nav.toc a:focus-visible {
+    color: var(--accent); border-left-color: var(--accent);
+  }
+  nav.toc .sub { padding-left: 1.5rem; font-size: .82rem; }
+
+  /* ---- content ---- */
+  main { min-width: 0; }
+  section { margin-bottom: var(--s6); scroll-margin-top: var(--s3); }
+
+  h2 {
+    font-family: var(--serif); font-size: 1.75rem; line-height: 1.2;
+    margin: 0 0 var(--s3); padding-bottom: var(--s2);
+    border-bottom: 1px solid var(--rule); text-wrap: balance;
+  }
+  h2 .num {
+    font-family: var(--mono); font-size: .8rem; color: var(--accent);
+    display: block; margin-bottom: .25rem; letter-spacing: .1em;
+  }
+  h3 {
+    font-family: var(--serif); font-size: 1.2rem; margin: var(--s4) 0 var(--s2);
+    text-wrap: balance;
+  }
+  h4 {
+    font-size: .78rem; letter-spacing: .12em; text-transform: uppercase;
+    color: var(--ink-faint); margin: var(--s3) 0 var(--s2); font-weight: 700;
+  }
+  p, ul, ol { max-width: var(--measure); }
+  p { margin: 0 0 var(--s3); }
+  ul, ol { margin: 0 0 var(--s3); padding-left: 1.3rem; }
+  li { margin-bottom: var(--s1); }
+  li::marker { color: var(--accent); }
+  strong { font-weight: 700; }
+  code {
+    font-family: var(--mono); font-size: .87em;
+    background: var(--code-bg); padding: .1em .35em; border-radius: 3px;
+  }
+
+  /* ---- callouts ---- */
+  .note {
+    border-left: 3px solid var(--accent); background: var(--accent-soft);
+    padding: var(--s3); margin: 0 0 var(--s3); max-width: var(--measure);
+  }
+  .note p:last-child { margin-bottom: 0; }
+  .note.warn { border-left-color: var(--caution); background: color-mix(in srgb, var(--caution) 10%, var(--surface)); }
+  .note .label {
+    font-size: .7rem; letter-spacing: .13em; text-transform: uppercase;
+    font-weight: 700; color: var(--accent); display: block; margin-bottom: .3rem;
+  }
+  .note.warn .label { color: var(--caution); }
+
+  blockquote {
+    margin: 0 0 var(--s3); padding: var(--s3) var(--s4);
+    background: var(--surface); border: 1px solid var(--rule);
+    font-family: var(--serif); font-size: 1.02rem; max-width: var(--measure);
+  }
+  blockquote p:last-child { margin-bottom: 0; }
+
+  /* ---- tables ---- */
+  .table-scroll { overflow-x: auto; margin: 0 0 var(--s3); border: 1px solid var(--rule); background: var(--surface); }
+  table { border-collapse: collapse; width: 100%; font-size: .85rem; }
+  th {
+    text-align: left; padding: .6rem .75rem; background: var(--surface-alt);
+    font-size: .7rem; letter-spacing: .1em; text-transform: uppercase;
+    color: var(--ink-soft); font-weight: 700; white-space: nowrap;
+    border-bottom: 1px solid var(--rule);
+  }
+  td { padding: .6rem .75rem; border-bottom: 1px solid var(--rule); vertical-align: top; }
+  tbody tr:last-child td { border-bottom: 0; }
+  td.num, th.num { font-variant-numeric: tabular-nums; text-align: right; }
+  .paper-id { font-family: var(--mono); font-size: .78rem; color: var(--ink-faint); display: block; }
+  cite { font-style: italic; }
+
+  /* ---- metrics ---- */
+  .metrics { display: grid; grid-template-columns: repeat(auto-fit, minmax(9rem, 1fr)); gap: 1px; background: var(--rule); border: 1px solid var(--rule); margin-bottom: var(--s3); }
+  .metric { background: var(--surface); padding: var(--s3); }
+  .metric .v { font-size: 2rem; font-weight: 700; font-variant-numeric: tabular-nums; line-height: 1; color: var(--accent); }
+  .metric .k { font-size: .72rem; letter-spacing: .1em; text-transform: uppercase; color: var(--ink-faint); margin-top: .4rem; font-weight: 700; }
+  .metric .d { font-size: .78rem; color: var(--ink-soft); margin-top: .25rem; }
+  .metric.plain .v { color: var(--ink); }
+
+  /* ---- headline result ---- */
+  .headline {
+    border: 2px solid var(--accent); background: var(--surface);
+    padding: var(--s4); margin-bottom: var(--s3);
+    display: flex; flex-wrap: wrap; align-items: baseline; gap: var(--s4);
+  }
+  .headline .big { font-size: 2.6rem; font-weight: 700; font-variant-numeric: tabular-nums; line-height: 1; }
+  .headline .lbl { font-size: .78rem; color: var(--ink-soft); margin-top: .3rem; }
+  .headline .arrow { font-size: 1.6rem; color: var(--ink-faint); }
+  .headline .cut .big { color: var(--clear); }
+  .headline .reach .big { color: var(--critical); }
+
+  /* ---- diagrams ---- */
+  .diagram { background: var(--surface); border: 1px solid var(--rule); padding: var(--s3); margin: 0 0 var(--s2); overflow-x: auto; }
+  .caption { font-size: .8rem; color: var(--ink-faint); margin-bottom: var(--s4); font-style: italic; }
+  pre.code {
+    background: var(--code-bg); border: 1px solid var(--rule);
+    padding: var(--s3); overflow-x: auto; font-family: var(--mono);
+    font-size: .8rem; line-height: 1.55; margin: 0 0 var(--s3);
+  }
+  pre.code code { background: none; padding: 0; }
+
+  .tag { display: inline-block; font-size: .68rem; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; padding: .12rem .4rem; border: 1px solid currentColor; }
+  .tag.crit { color: var(--critical); }
+  .tag.ok { color: var(--clear); }
+  .tag.warn { color: var(--caution); }
+
+  footer { grid-column: 1 / -1; border-top: 1px solid var(--rule); padding-top: var(--s3); font-size: .82rem; color: var(--ink-faint); }
+
+  a { color: var(--accent); }
+  :focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+  @media print {
+    nav.toc { display: none; }
+    .wrap { grid-template-columns: 1fr; padding: 0; max-width: none; }
+    body { font-size: 10.5pt; background: #fff; color: #000; }
+    section { page-break-inside: auto; margin-bottom: 2rem; }
+    h2 { page-break-after: avoid; }
+    .table-scroll, .diagram, .headline { page-break-inside: avoid; }
+  }
+</style>
+
+<div class="wrap">
+
+  <header class="masthead">
+    <div class="eyebrow">Review 1 &middot; Final Year Project</div>
+    <h1>ChainGuard</h1>
+    <p class="subtitle">AI-Powered Software Supply Chain Security: Malicious Package
+      Detection and Vulnerability Reachability Analysis</p>
+    <div class="rubric-strip">
+      <div class="rubric-chip"><b>01</b> Domain &amp; Problem Statement</div>
+      <div class="rubric-chip"><b>02</b> Literature Review &middot; 27 papers</div>
+      <div class="rubric-chip"><b>03</b> Proposed Methodology</div>
+      <div class="rubric-chip"><b>04</b> Module &amp; System Design</div>
+    </div>
+  </header>
+
+  <nav class="toc">
+    <h2>Contents</h2>
+    <ol>
+      <li><a href="#domain">1 &nbsp;Domain &amp; Problem</a></li>
+      <li><a href="#lit">2 &nbsp;Literature Review</a></li>
+      <li class="sub"><a href="#lit-table">2.1 Reviewed papers</a></li>
+      <li class="sub"><a href="#gap">2.3 Research gap</a></li>
+      <li><a href="#method">3 &nbsp;Methodology</a></li>
+      <li class="sub"><a href="#detect">3.2 Detection</a></li>
+      <li class="sub"><a href="#leak">3.3 Label leakage</a></li>
+      <li class="sub"><a href="#reach">3.4 Reachability</a></li>
+      <li><a href="#design">4 &nbsp;System Design</a></li>
+      <li class="sub"><a href="#modules">4.2 Modules</a></li>
+      <li><a href="#results">5 &nbsp;Results</a></li>
+      <li><a href="#limits">6 &nbsp;Limitations</a></li>
+    </ol>
+  </nav>
+
+  <main>
+
+    <!-- ================= 1 ================= -->
+    <section id="domain">
+      <h2><span class="num">Rubric 01</span>Domain Knowledge &amp; Problem Statement</h2>
+
+      <p>Modern software is <strong>assembled, not written</strong>. A typical Node.js
+        application declares 15&ndash;40 direct dependencies but installs 800&ndash;1,500
+        packages once transitive dependencies resolve; a Python application installs
+        200&ndash;400. Each is code that runs with the full privileges of the developer
+        who installs it, and later of the production process that runs it.</p>
+
+      <h3>Why the ecosystem is structurally attackable</h3>
+      <ul>
+        <li><strong>Install-time execution.</strong> npm runs <code>preinstall</code>,
+          <code>install</code> and <code>postinstall</code> hooks automatically; Python
+          executes <code>setup.py</code> from a source distribution. Code runs
+          <em>before the developer invokes anything</em> &mdash; on machines holding cloud
+          credentials, SSH keys and signing tokens.</li>
+        <li><strong>Transitive trust is unbounded.</strong> Installing one package trusts
+          its entire closure and every maintainer in it.</li>
+        <li><strong>Publication is effectively unauthenticated.</strong> No review;
+          names are first-come-first-served.</li>
+        <li><strong>Human name resolution is fuzzy.</strong> Nobody reliably distinguishes
+          <code>python-dateutil</code> from <code>python-dateutils</code>.</li>
+      </ul>
+
+      <h4>Incidents that define the threat model</h4>
+      <div class="table-scroll">
+        <table>
+          <thead><tr><th>Incident</th><th>Ecosystem</th><th>Mechanism</th><th>Impact</th></tr></thead>
+          <tbody>
+            <tr><td><code>event-stream</code> (2018)</td><td>npm</td><td>Maintainer handover, malicious dependency added</td><td>Targeted Bitcoin wallet theft; ~2M weekly downloads</td></tr>
+            <tr><td><code>ua-parser-js</code> (2021)</td><td>npm</td><td>Maintainer account compromise</td><td>Cryptominer + credential stealer; ~8M weekly downloads</td></tr>
+            <tr><td><code>colors</code> / <code>faker</code> (2022)</td><td>npm</td><td>Maintainer self-sabotage</td><td>Broke thousands of CI pipelines</td></tr>
+            <tr><td><code>ctx</code> / <code>phpass</code> (2022)</td><td>PyPI</td><td>Abandoned-name takeover</td><td>AWS credential exfiltration</td></tr>
+            <tr><td>PyTorch <code>torchtriton</code> (2022)</td><td>PyPI</td><td>Dependency confusion</td><td>Exfiltrated <code>/etc/passwd</code>, SSH keys</td></tr>
+            <tr><td>XZ Utils (2024)</td><td>Linux distros</td><td>Multi-year social engineering of a maintainer</td><td>Near-miss OpenSSH backdoor on most Linux servers</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <h3>Two problems, one pipeline</h3>
+      <p><strong>Problem A &mdash; malicious packages (detection).</strong> Signature
+        scanning fails structurally: every malicious package is new by construction, and
+        most are removed within days, so a signature arrives after the damage. Detection
+        must generalise from <em>behaviour</em>, not identity.</p>
+
+      <p><strong>Problem B &mdash; alert fatigue (prioritisation).</strong> SCA tools
+        match versions against advisory databases and report every hit &mdash; 150&ndash;300
+        findings on a real project. Teams cannot triage that, so they triage nothing.
+        The root cause is that <strong>the report is mostly irrelevant</strong>: a CVE in
+        a dependency matters only if the application can actually reach the vulnerable
+        function, and published measurements put that fraction well under 5%.</p>
+
+      <blockquote>
+        <p><strong>Problem statement.</strong> Given a project <em>P</em> with manifest
+        <em>M</em> and source <em>S</em>, and dependency closure <em>D(M)</em>:</p>
+        <p><strong>(A)</strong> for each <em>d &isin; D(M)</em>, decide whether <em>d</em>
+        is malicious using only statically observable properties, generalising to unseen
+        packages, and emitting auditable evidence.</p>
+        <p><strong>(B)</strong> for each vulnerability <em>v</em> affecting some
+        <em>d</em>, decide whether the vulnerable symbol is reachable from an entry point
+        of <em>S</em>, and emit the call path as proof.</p>
+        <p>Subject to: no package is ever executed; and uncertainty in (B) always
+        resolves to <em>reachable</em>, because a false &ldquo;unreachable&rdquo;
+        conceals an exploitable flaw.</p>
+      </blockquote>
+
+      <h4>Scope boundaries, stated deliberately</h4>
+      <p>Out of scope: dynamic/sandbox analysis (evadable by triggered payloads, needs
+        isolation infrastructure); full JavaScript call-graph construction (dynamic
+        <code>require</code>, bundlers and monkey-patching make it a research problem
+        &mdash; attempting it would produce something that <em>looks</em> like reachability
+        analysis and silently returns wrong answers); build-system provenance (SLSA), which
+        proves <em>origin</em>, not <em>safety</em>.</p>
+    </section>
+
+    <!-- ================= 2 ================= -->
+    <section id="lit">
+      <h2><span class="num">Rubric 02</span>Literature Review</h2>
+      <p><strong>27 papers reviewed &mdash; 24 published 2023&ndash;2026</strong>, plus
+        three foundational works (2019&ndash;2020) that define the datasets and
+        measurements the recent literature builds on.</p>
+
+      <div id="lit-table"></div>
+
+      <h3>Theme A &mdash; Threat characterisation, datasets, measurement</h3>
+      <div class="table-scroll">
+        <table>
+          <thead><tr><th class="num">#</th><th>Authors (Year)</th><th>Contribution</th><th>Limitation</th></tr></thead>
+          <tbody>
+            <tr><td class="num">1</td><td>Ohm, Plate, Sykosch, Meier (2020)<span class="paper-id">arXiv:2005.09535 &middot; DIMVA</span></td><td>Foundational dataset: 174 real malicious packages with attack-tree taxonomy. Establishes install hooks as the dominant vector.</td><td>Small by modern standards; predates the 2021&ndash;24 surge.</td></tr>
+            <tr><td class="num">2</td><td>Zimmermann, Staicu, Tenny, Pradel (2019)<span class="paper-id">arXiv:1902.09217 &middot; USENIX Sec</span></td><td>Quantifies transitive trust &mdash; a handful of maintainer accounts reach most of npm.</td><td>Measures structure, not detection; npm only.</td></tr>
+            <tr><td class="num">3</td><td>Guo et al. (2023)<span class="paper-id">arXiv:2309.11021</span></td><td>Large-scale characterisation of malicious PyPI code over time.</td><td>Descriptive; proposes no detector.</td></tr>
+            <tr><td class="num">4</td><td>Ladisa, Plate, Martinez, Barais et al. (2023)<span class="paper-id">arXiv:2307.09087</span></td><td>Systematises attacker techniques into a reusable cross-ecosystem taxonomy.</td><td>Taxonomy, not implementation.</td></tr>
+            <tr><td class="num">5</td><td>Vu et al. (2024)<span class="paper-id">arXiv:2411.11017</span></td><td>Shows distribution curation materially reduces malware vs. open registries.</td><td>Distro-focused; not directly transferable.</td></tr>
+            <tr><td class="num">6</td><td>Ryan et al. (2025)<span class="paper-id">arXiv:2512.12559</span></td><td>Statement-level taxonomy and dataset for malicious Python logic.</td><td>Labelling expensive; dataset still growing.</td></tr>
+            <tr><td class="num">7</td><td>Guo et al. (2026)<span class="paper-id">arXiv:2603.27549</span></td><td>Benchmarks npm detectors; evasion use grew <strong>3.8&times;</strong> (94&rarr;358 packages) 2020&rarr;2024-25; hook abuse at 9.4%.</td><td>Evaluates detectors; proposes none.</td></tr>
+            <tr><td class="num">8</td><td>Robinson et al. (2026)<span class="paper-id">arXiv:2604.17668</span></td><td>Models vulnerability propagation through JavaScript dependency networks.</td><td>Package granularity, not call granularity.</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <h3>Theme B &mdash; Machine learning &amp; static-feature detection</h3>
+      <div class="table-scroll">
+        <table>
+          <thead><tr><th class="num">#</th><th>Authors (Year)</th><th>Contribution</th><th>Limitation</th></tr></thead>
+          <tbody>
+            <tr><td class="num">9</td><td>Zhang et al. (2023)<span class="paper-id">arXiv:2309.02637</span></td><td>Cross-ecosystem detection from abstracted behaviour sequences; one model for npm and PyPI.</td><td>Sequence extraction degrades under obfuscation.</td></tr>
+            <tr><td class="num">10</td><td>Samaana et al. (2024)<span class="paper-id">arXiv:2412.05259</span></td><td><strong>Closest prior work.</strong> Classical ML (RF/DT/XGBoost) over metadata and code-structure features.</td><td>PyPI only; notes Levenshtein-only typosquat detection has high error rates.</td></tr>
+            <tr><td class="num">11</td><td>Mehedi et al. (2025) &mdash; DySec<span class="paper-id">arXiv:2503.00324</span></td><td>Dynamic tracing of install-time behaviour; sees what static analysis cannot.</td><td>Needs sandboxing; evaded by triggered payloads; costly.</td></tr>
+            <tr><td class="num">12</td><td>Zhang, X. et al. (2025)<span class="paper-id">arXiv:2504.17198 &middot; DSN</span></td><td>LLM synthesises detection rules &mdash; LLM generality with rule auditability.</td><td>Rules need human validation; drift with model version.</td></tr>
+            <tr><td class="num">13</td><td>Yan et al. (2025)<span class="paper-id">arXiv:2511.13341</span></td><td>Quantifies <em>high-stealth</em> backdoor risk that behavioural detectors miss.</td><td>Framework, not deployable detector.</td></tr>
+            <tr><td class="num">14</td><td>Guo, W. et al. (2026)<span class="paper-id">arXiv:2601.16463</span></td><td>Knowledge-mining framework grounding detection in documented dangerous APIs.</td><td>Knowledge-base construction is the bottleneck.</td></tr>
+            <tr><td class="num">15</td><td>Pang et al. (2026) &mdash; PYPILINE<span class="paper-id">arXiv:2606.19063</span></td><td>Agent workflow over suspicious-API knowledge; explicitly targets interpretability.</td><td>Slow and costly at registry scale.</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <h3>Theme C &mdash; Large language models for package analysis</h3>
+      <div class="table-scroll">
+        <table>
+          <thead><tr><th class="num">#</th><th>Authors (Year)</th><th>Contribution</th><th>Limitation</th></tr></thead>
+          <tbody>
+            <tr><td class="num">16</td><td>Zahan, Burckhardt, Lysenko et al. (2024)<span class="paper-id">arXiv:2403.12196</span></td><td>Multi-stage LLM workflow (SocketAI Scanner) with self-refinement and zero-shot CoT.</td><td>Cost, latency, non-determinism; unstable precision/recall.</td></tr>
+            <tr><td class="num">17</td><td>Nguyen et al. (2025)<span class="paper-id">arXiv:2512.12313</span></td><td>Taint-based slicing before prompting, so the LLM sees only relevant paths.</td><td>Depends on slice quality; inherits LLM cost.</td></tr>
+            <tr><td class="num">18</td><td>Lamprou et al. (2025) &mdash; Lexo<span class="paper-id">arXiv:2510.14522</span></td><td>Regenerates package functionality from scratch, removing hidden behaviour rather than detecting it.</td><td>Correctness unproven at scale; heavy.</td></tr>
+            <tr><td class="num">19</td><td>Ryan et al. (2026)<span class="paper-id">arXiv:2602.16304</span></td><td>Finds a gap between LLM high-level detection and fine-grained indicator identification.</td><td>Identifies the gap; does not close it.</td></tr>
+            <tr><td class="num">20</td><td>Toda, Ishikawa (2026) &mdash; CHASE<span class="paper-id">arXiv:2601.06838</span></td><td>LLM agents producing analyst-style dissections of malicious packages.</td><td>Explanatory rather than primary detection.</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <h3>Theme D &mdash; Reachability, SCA &amp; prioritisation</h3>
+      <div class="table-scroll">
+        <table>
+          <thead><tr><th class="num">#</th><th>Authors (Year)</th><th>Contribution</th><th>Limitation</th></tr></thead>
+          <tbody>
+            <tr><td class="num">21</td><td>Foo, Chua, Yeo, Ang (2019)<span class="paper-id">arXiv:1909.00973</span></td><td><strong>Frames this project.</strong> SCA must discover dependencies, <em>check reachability of vulnerable code to eliminate false positives</em>, and automate remediation.</td><td>Predates modern scale; no released implementation.</td></tr>
+            <tr><td class="num">22</td><td>Chen et al. (2023)<span class="paper-id">arXiv:2312.09564</span></td><td>Generates tests that actually trigger a library vulnerability from client code.</td><td>Expensive; coverage-limited.</td></tr>
+            <tr><td class="num">23</td><td>Alexopoulos et al. (2026)<span class="paper-id">arXiv:2603.18693</span></td><td>Cross-ecosystem vulnerability analysis spanning PyPI and system dependencies.</td><td>Python-centric; system linkage partial.</td></tr>
+            <tr><td class="num">24</td><td>Ma et al. (2025) &mdash; ReachCheck<span class="paper-id">ACM TOSEM &middot; 10.1145/3767166</span></td><td>Compositional library-aware call-graph reachability, fast enough for IDE use.</td><td>Needs precomputed library summaries; language-specific.</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <h3>Theme E &mdash; Ecosystem defences, SBOM, provenance</h3>
+      <div class="table-scroll">
+        <table>
+          <thead><tr><th class="num">#</th><th>Authors (Year)</th><th>Contribution</th><th>Limitation</th></tr></thead>
+          <tbody>
+            <tr><td class="num">25</td><td>Gokkaya, Aniello, Halak (2023)<span class="paper-id">arXiv:2305.14157</span></td><td>Systematic review mapping attacks to controls.</td><td>Survey; no empirical evaluation.</td></tr>
+            <tr><td class="num">26</td><td>Tamanna, Williams et al. (2024)<span class="paper-id">arXiv:2409.05014</span></td><td>Documents why SLSA provenance is hard to adopt in practice.</td><td>Provenance proves origin, not safety.</td></tr>
+            <tr><td class="num">27</td><td>O'Donoghue et al. (2025)<span class="paper-id">arXiv:2506.03507</span></td><td>SLR over 40 studies; names <strong>false positives</strong> and <strong>exploitability</strong> among the top barriers to SBOM usefulness.</td><td>Confirms the problem; does not solve it.</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <h3>Synthesis</h3>
+      <ul>
+        <li><strong>Detection has converged on behaviour, not signatures.</strong> Every
+          recent detector models what a package <em>does</em>.</li>
+        <li><strong>Three families, one trade-off.</strong> Static ML is fast, cheap and
+          measurable but bounded by feature quality; dynamic analysis sees real behaviour
+          but needs sandboxing and is evaded by triggers; LLMs generalise well but are
+          slow, costly and &mdash; the recurring criticism &mdash; <em>hard to evaluate
+          with stable precision and recall</em>.</li>
+        <li><strong>Evasion is escalating.</strong> 3.8&times; growth in evasion technique
+          use between 2020 and 2024&ndash;25 [#7].</li>
+        <li><strong>Prioritisation is acknowledged but under-served.</strong> Reachability
+          was named a core SCA task in 2019 [#21]; in 2025 false positives and
+          exploitability are still top SBOM barriers [#27]. <strong>Six years, same
+          gap.</strong></li>
+      </ul>
+
+      <h3 id="gap">Research gap</h3>
+      <div class="table-scroll">
+        <table>
+          <thead><tr><th>Gap</th><th>Evidence</th><th>Addressed by</th></tr></thead>
+          <tbody>
+            <tr><td><strong>G1</strong> Detection and prioritisation are studied separately, yet a practitioner needs both on the same tree.</td><td>No reviewed paper does both.</td><td>&sect;3.1 &mdash; one pipeline, two independent analyses over a shared dependency graph.</td></tr>
+            <tr><td><strong>G2</strong> Reachability is named as the fix for alert fatigue but rarely implemented end-to-end for npm/PyPI, because advisories lack structured symbol data.</td><td>#21 (2019) vs. #27 (2025).</td><td>&sect;3.4 &mdash; three-tier symbol extraction with the tier reported; graded verdicts.</td></tr>
+            <tr><td><strong>G3</strong> Evaluation methodology under-reported &mdash; grouping, leakage and baselines seldom discussed.</td><td>Metrics commonly reported without split-grouping detail.</td><td>&sect;3.5 &mdash; grouped CV, leakage prevention, rules baseline, ablation.</td></tr>
+            <tr><td><strong>G4</strong> Explainability asserted rather than delivered; most detectors emit a score with no auditable evidence.</td><td>Score-only outputs dominate.</td><td>&sect;3.2 &mdash; every verdict carries file, line, snippet, explanation.</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="note">
+        <span class="label">Positioning</span>
+        <p>ChainGuard sits deliberately in the <strong>static + classical ML</strong>
+        family &mdash; measurable, offline, free to run &mdash; and adds the
+        <strong>reachability layer the detection literature omits</strong>. The LLM is
+        used only to <em>explain</em> verdicts, never to make them, precisely because the
+        reviewed LLM literature identifies evaluation instability as its central
+        weakness.</p>
+      </div>
+    </section>
+
+    <!-- ================= 3 ================= -->
+    <section id="method">
+      <h2><span class="num">Rubric 03</span>Design of Proposed Methodology</h2>
+
+      <p>Five sequential stages over a shared dependency graph. The two analyses that
+        matter are deliberately <strong>independent</strong> &mdash; a failure in one does
+        not take out the other. This is the direct answer to gap G1.</p>
+
+      <div class="diagram">
+        <pre class="mermaid">
+flowchart TD
+  A["Manifest + Application source"] --> B["1 · PARSE<br/>manifest to requirements"]
+  B --> C["2 · RESOLVE<br/>BFS transitive closure<br/>npm / PyPI"]
+  C --> D["3 · DETECT<br/>download in memory<br/>AST static analysis<br/>58-feature vector<br/>ML classifier"]
+  C --> E["4 · ADVISE<br/>OSV.dev batch query<br/>CVSS + fixed versions<br/>symbol extraction"]
+  E --> F["5 · REACH<br/>call graph of app source<br/>symbol resolution"]
+  D -->|score + evidence| G["Risk aggregation<br/>remediation plan · report"]
+  F -->|verdict + proof path| G
+        </pre>
+      </div>
+      <p class="caption">Figure 1 &mdash; Five-stage scan pipeline. Detection (3) and
+        reachability (4&ndash;5) are independent branches over the same resolved graph.</p>
+
+      <h3 id="detect">3.2 &nbsp;Detection methodology</h3>
+
+      <h4>Why AST parsing, not pattern matching</h4>
+      <p>A regex for <code>eval(</code> matches the word in a comment, a docstring, or a
+        variable named <code>evaluate</code>. An AST sees a genuine call node. More
+        importantly it resolves aliases: <code>import subprocess as sp</code> then
+        <code>sp.run(...)</code> is invisible to text search and explicit in the tree.
+        Parsing is also what makes analysing hostile code <em>safe</em> &mdash;
+        <code>ast.parse()</code> builds a tree without evaluating anything.</p>
+
+      <div class="note">
+        <span class="label">Core invariant</span>
+        <p><strong>No package is ever executed.</strong> No <code>pip install</code>, no
+        <code>npm install</code>, no <code>setup.py</code> invocation anywhere in the
+        system. When a parse fails, the analyser degrades to text scanning and sets a
+        flag, so the feature vector records <em>reduced visibility</em> rather than
+        reporting a file clean that it never actually read.</p>
+      </div>
+
+      <h4>Composite signals &mdash; the key design idea</h4>
+      <p>Reading the environment is unremarkable. Making an HTTP request is unremarkable.
+        <strong>Doing both in one file is the shape of credential theft</strong>, and no
+        individual detector can observe that co-occurrence. Per-file analysers record
+        behaviour <em>flags</em>; a second pass derives composites from them.</p>
+      <p>Validated empirically: across twelve popular real packages
+        (<code>express</code>, <code>axios</code>, <code>webpack</code>,
+        <code>requests</code>, <code>flask</code>, <code>rich</code> and others)
+        <strong>not one composite signal fired</strong>, while both malicious samples
+        triggered them immediately. Individual sinks are noisy; composition is precise.</p>
+
+      <h4>Typosquat detection &mdash; four mechanisms, not one</h4>
+      <p>Prior work [#10] notes Levenshtein-only detection has high error rates. The
+        implementation combines keyboard-adjacency-weighted Damerau&ndash;Levenshtein
+        (adjacent-key substitution and transposition cost 0.6, not 1.0, because swapping
+        adjacent characters is the most common typing error), homoglyph substitution,
+        structural variants (separators, affixes), and scope confusion &mdash; against
+        614 npm + 518 PyPI popular names generated and committed for reproducibility.</p>
+
+      <h3 id="leak">3.3 &nbsp;Dataset &amp; label-leakage prevention</h3>
+      <div class="metrics">
+        <div class="metric plain"><div class="v">1,797</div><div class="k">Samples</div><div class="d">1,796 distinct families</div></div>
+        <div class="metric plain"><div class="v">898</div><div class="k">Malicious</div><div class="d">DataDog dataset, Apache-2.0</div></div>
+        <div class="metric plain"><div class="v">899</div><div class="k">Benign</div><div class="d">Live npm + PyPI</div></div>
+      </div>
+
+      <div class="note warn">
+        <span class="label">The most important methodological decision</span>
+        <p>Malicious samples come from an archive &mdash; those packages were removed
+        years ago, so they have <strong>no live registry metadata</strong>. Benign samples
+        are fetched live and have all of it. Feeding registry metadata to the classifier
+        would let <code>version_count &gt; 0</code> separate the classes <em>perfectly</em>
+        &mdash; not by detecting malware, but by detecting <strong>which corpus a sample
+        came from</strong>. The model would report near-perfect metrics and be worthless,
+        and the failure would be invisible: the numbers would simply look excellent.</p>
+        <p><strong>Two countermeasures, enforced in code:</strong> metadata is
+        reconstructed only from inside the archive (fields an attacker equally controls),
+        and five registry-only features are zeroed for every training sample inside the
+        matrix builder so no caller can bypass it.</p>
+        <p>The cost is that the model cannot learn &ldquo;published yesterday&rdquo; as
+        evidence. That is the correct trade: <strong>a feature available for only one
+        class in training is not a feature, it is the label.</strong></p>
+      </div>
+
+      <p><strong>Benign samples are real popular packages, not toy examples.</strong> The
+        classifier must separate malware from <em>real library code</em> &mdash; full of
+        network calls, subprocess use and minified bundles. A corpus of hand-written clean
+        examples produces a model that scores beautifully and collapses on first contact
+        with reality.</p>
+
+      <h3 id="reach">3.4 &nbsp;Reachability methodology</h3>
+      <pre class="code"><code>INPUT :  project source S, package p, vulnerable symbols V
+OUTPUT:  verdict, call path
+
+1  G ← build call graph over S
+       nodes = module scopes ∪ function scopes
+       edges = intra-app calls ∪ import edges
+2  A ← import names actually provided by p        # pyyaml → yaml
+3  if no module of S imports any name in A:
+       return NOT_IMPORTED                        # strongest negative
+4  if V = ∅:
+       return ASSUMED_REACHABLE                   # fail-safe: cannot rule out
+5  E ← entry points = modules imported by nothing else
+6  # Pass 1 — module-level seeds only, so any path found is a real call chain
+   path ← BFS(G, seeds = module scopes of E, target = calls into p.V)
+   if path ≠ ∅: return REACHABLE, path
+7  # Pass 2 — add public functions of entry modules (assumed externally callable)
+   path ← BFS(G, seeds ∪ public functions of E, target = same)
+   if path ≠ ∅: return REACHABLE, path
+8  return SYMBOL_NOT_CALLED</code></pre>
+
+      <h4>Three decisions that make this work</h4>
+      <ul>
+        <li><strong>Graded verdicts, not a boolean.</strong> <code>NOT_IMPORTED</code>
+          (high confidence) is a far stronger claim than <code>SYMBOL_NOT_CALLED</code>
+          (medium), and both differ from <code>ASSUMED_REACHABLE</code> (low). Collapsing
+          these throws away the distinction that makes output actionable.</li>
+        <li><strong>Two-pass search, because proof quality differs.</strong> Pass 1 starts
+          only from module-level code, so any path it finds is a genuine call chain. On the
+          demo this is the difference between a one-hop match and the full four-step
+          trace.</li>
+        <li><strong>Distribution names are not import names.</strong>
+          <code>pip install pyyaml</code> gives <code>import yaml</code>;
+          <code>pillow</code> gives <code>PIL</code>. Conflating them produces a
+          <em>confident false &ldquo;safe&rdquo; verdict</em> &mdash; the worst possible
+          output. Resolution is derived from each downloaded archive.</li>
+      </ul>
+
+      <div class="note">
+        <span class="label">Fail-safe direction</span>
+        <p>Every uncertain case resolves to <strong>reachable</strong>. A false
+        &ldquo;reachable&rdquo; costs an engineer ten minutes; a false
+        &ldquo;unreachable&rdquo; hides an exploitable vulnerability. Related: a package
+        that <em>could not be downloaded</em> has no signals and scores 0.0 &mdash;
+        reporting that as clean would be a false all-clear in exactly the case where the
+        tool is most useful, so such packages are reported separately as
+        <strong>&ldquo;Not inspected &mdash; NOT confirmed clean.&rdquo;</strong></p>
+      </div>
+
+      <h3>3.5 &nbsp;Evaluation methodology <span style="font-weight:400;font-size:.9rem;color:var(--ink-faint)">(gap G3)</span></h3>
+      <div class="table-scroll">
+        <table>
+          <thead><tr><th>Decision</th><th>Rationale</th></tr></thead>
+          <tbody>
+            <tr><td><strong>Grouped splitting</strong> by package name</td><td>Different versions of one package, and repeat uploads from one campaign, must never span the train/test boundary. Without grouping, a near-duplicate of a test sample sits in training and every score inflates. This single choice separates an honest number from a flattering one.</td></tr>
+            <tr><td><strong>Out-of-fold reporting</strong></td><td>Every figure comes from a model that had not seen that sample.</td></tr>
+            <tr><td><strong>PR-AUC leads over accuracy</strong></td><td>Deployment balance is extreme; predicting &ldquo;benign&rdquo; always would score high accuracy and detect nothing.</td></tr>
+            <tr><td><strong>Probability calibration</strong> (isotonic, grouped folds)</td><td>The number is shown to a human, so 0.8 should mean roughly &ldquo;80% of packages scoring this are malicious&rdquo;.</td></tr>
+            <tr><td><strong>Rules-only baseline</strong></td><td>Without it, &ldquo;we used machine learning&rdquo; is an assertion rather than a result.</td></tr>
+            <tr><td><strong>Per-family ablation</strong></td><td>Each family zeroed and retrained, keeping feature count constant so models stay comparable.</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- ================= 4 ================= -->
+    <section id="design">
+      <h2><span class="num">Rubric 04</span>Module Description &amp; System Design</h2>
+
+      <div class="diagram">
+        <pre class="mermaid">
+flowchart TB
+  subgraph P["PRESENTATION"]
+    UI["React + Tailwind dashboard"]
+    CLI["Command-line interface"]
+    RPT["Self-contained HTML report"]
+  end
+  subgraph S["SERVICE"]
+    API["FastAPI application"]
+    JOB["Background job registry"]
+    ORCH["Scan orchestrator"]
+  end
+  subgraph AN["ANALYSIS"]
+    SA["Static analysers<br/>Python AST · JS AST · shell"]
+    FE["Feature extraction · 58 features"]
+    ML["ML classifier + inference"]
+    RE["Reachability engine"]
+  end
+  subgraph AC["ACQUISITION"]
+    NPM["npm client"]
+    PYPI["PyPI client"]
+    ARC["Archive extraction"]
+    RES["Dependency resolver"]
+    OSV["OSV advisory client"]
+  end
+  subgraph D["DATA"]
+    DB[("SQLite scan store")]
+    VAULT[("Encoded sample vault")]
+    CACHE[("HTTP cache")]
+    MODEL[("Model artifacts")]
+  end
+  UI --> API
+  CLI --> ORCH
+  API --> JOB --> ORCH
+  ORCH --> SA --> FE --> ML
+  ORCH --> RES
+  RES --> NPM
+  RES --> PYPI
+  NPM --> ARC
+  PYPI --> ARC
+  ARC --> SA
+  ORCH --> OSV --> RE
+  ORCH --> RPT
+  ML --> MODEL
+  ORCH --> DB
+  NPM --> CACHE
+  ML -.training.-> VAULT
+        </pre>
+      </div>
+      <p class="caption">Figure 2 &mdash; Layered architecture.</p>
+
+      <h3 id="modules">4.2 &nbsp;Module description</h3>
+      <div class="table-scroll">
+        <table>
+          <thead><tr><th class="num">ID</th><th>Module</th><th>Responsibility</th><th>Input &rarr; Output</th></tr></thead>
+          <tbody>
+            <tr><td class="num">M1</td><td><code>config</code></td><td>Settings and the resource ceilings that protect the scanner from hostile input</td><td>Env &rarr; <code>Settings</code></td></tr>
+            <tr><td class="num">M2</td><td><code>registry.npm/pypi</code></td><td>Fetch metadata and distributions; resolve version specifiers</td><td>Name+range &rarr; metadata, bytes</td></tr>
+            <tr><td class="num">M3</td><td><code>registry.semver</code></td><td>npm range grammar incl. the 0.x caret rule</td><td>Range &rarr; concrete version</td></tr>
+            <tr><td class="num">M4</td><td><code>registry.archive</code></td><td>In-memory extraction with zip-slip, bomb, member-count and file-size guards</td><td>Archive &rarr; files</td></tr>
+            <tr><td class="num">M5</td><td><code>registry.manifest</code></td><td>package.json, lockfile v1/2/3, requirements.txt, pyproject.toml</td><td>Text &rarr; <code>ParsedManifest</code></td></tr>
+            <tr><td class="num">M6</td><td><code>registry.resolver</code></td><td>BFS transitive closure; lockfile precedence; per-package failure isolation</td><td>Manifest &rarr; <code>DependencyGraph</code></td></tr>
+            <tr><td class="num">M7</td><td><code>analysis.*_ast</code></td><td>AST analysis, alias resolution, install-hook command analysis</td><td>Files &rarr; signals</td></tr>
+            <tr><td class="num">M8</td><td><code>analysis.typosquat</code></td><td>Weighted edit distance, homoglyph, separator, affix, scope confusion</td><td>Name &rarr; match</td></tr>
+            <tr><td class="num">M9</td><td><code>analysis.features</code></td><td>58 versioned features across 11 groups</td><td>Signals &rarr; vector</td></tr>
+            <tr><td class="num">M10</td><td><code>analysis.engine</code></td><td>Orchestrates per-file analysis; derives composite signals</td><td>Contents &rarr; <code>AnalysisResult</code></td></tr>
+            <tr><td class="num">M11</td><td><code>dataset.*</code></td><td>Encoded vault, corpus acquisition, leakage-free matrix construction</td><td>Corpora &rarr; <code>features.csv</code></td></tr>
+            <tr><td class="num">M12</td><td><code>ml.train</code></td><td>Grouped CV, baseline, ablation, calibration, charts</td><td>Matrix &rarr; model + card</td></tr>
+            <tr><td class="num">M13</td><td><code>ml.model</code></td><td>Schema-checked scoring; degrades to rules baseline and says so</td><td>Vector &rarr; <code>Prediction</code></td></tr>
+            <tr><td class="num">M14</td><td><code>vulns.osv</code></td><td>Batch queries, CVSS parsing, three-tier symbol extraction</td><td>Refs &rarr; advisories</td></tr>
+            <tr><td class="num">M15</td><td><code>vulns.import_names</code></td><td>Distribution &rarr; module mapping (<code>pyyaml</code>&rarr;<code>yaml</code>)</td><td>Dist &rarr; modules</td></tr>
+            <tr><td class="num">M16</td><td><code>vulns.reachability</code></td><td>Call graph, entry points, two-pass BFS, proof paths</td><td>Source+symbols &rarr; verdict</td></tr>
+            <tr><td class="num">M17</td><td><code>scanner</code></td><td>Five-stage pipeline, CVE dedup, risk aggregation, remediation</td><td>Project &rarr; <code>ScanResult</code></td></tr>
+            <tr><td class="num">M18</td><td><code>llm.explain</code></td><td>Prose explanation; local by default; never changes a verdict</td><td>Signals &rarr; text</td></tr>
+            <tr><td class="num">M19</td><td><code>reporting.html</code></td><td>Self-contained report with print stylesheet</td><td>Result &rarr; HTML</td></tr>
+            <tr><td class="num">M20</td><td><code>api.app/jobs</code></td><td>REST endpoints, background jobs, progress, model hot-reload</td><td>HTTP &rarr; JSON</td></tr>
+            <tr><td class="num">M21</td><td><code>models.db</code></td><td>SQLite store with queryable summary columns</td><td>Result &rarr; row</td></tr>
+            <tr><td class="num">M22</td><td><code>frontend</code></td><td>Submission, progress, evidence, call-path viewer, evaluation</td><td>REST &rarr; UI</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <h3>4.3 &nbsp;Scan sequence</h3>
+      <div class="diagram">
+        <pre class="mermaid">
+sequenceDiagram
+  actor Dev as Developer
+  participant UI as Dashboard
+  participant API as FastAPI
+  participant SC as Scanner
+  participant REG as npm / PyPI
+  participant OSV as OSV.dev
+  participant RE as Reachability
+  Dev->>UI: Submit project path
+  UI->>API: POST /api/scans/project
+  API-->>UI: 202 scan_id
+  API->>SC: start background job
+  SC->>REG: resolve dependency tree
+  REG-->>SC: dependency graph
+  SC->>REG: download distributions
+  REG-->>SC: package archives
+  SC->>SC: AST analysis + classify
+  SC->>OSV: batch advisory query
+  OSV-->>SC: CVEs + symbols
+  SC->>RE: build call graph of app source
+  RE-->>SC: reachable + proof path
+  loop poll
+    UI->>API: GET /status
+    API-->>UI: stage, progress
+  end
+  UI->>API: GET scan result
+  API-->>UI: findings + remediation
+  UI-->>Dev: Report
+        </pre>
+      </div>
+      <p class="caption">Figure 3 &mdash; Scan sequence. Submission returns immediately;
+        the client polls because a real scan takes tens of seconds.</p>
+
+      <h3>4.4 &nbsp;Security design of the scanner itself</h3>
+      <p>A tool that ingests malicious packages is itself a target.</p>
+      <div class="table-scroll">
+        <table>
+          <thead><tr><th>Threat</th><th>Control</th></tr></thead>
+          <tbody>
+            <tr><td>Sample execution</td><td>Never installed or executed; static parsing only</td></tr>
+            <tr><td>Malware on disk</td><td>Training samples encoded at rest, decoded in memory only</td></tr>
+            <tr><td>Zip-slip / traversal</td><td>Escaping paths, symlinks and absolute paths rejected</td></tr>
+            <tr><td>Decompression bombs</td><td>Size ceiling and compression-ratio limit checked <em>before</em> decompression</td></tr>
+            <tr><td>Parser denial-of-service</td><td>Per-file size caps, file-count caps, AST parse ceiling, per-package timeout</td></tr>
+            <tr><td>Report injection</td><td>All interpolated values HTML-escaped &mdash; package names are attacker-controlled</td></tr>
+            <tr><td>Cross-origin abuse</td><td>CORS restricted to dev-server origins; dev server proxies so no cross-origin request occurs</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- ================= 5 ================= -->
+    <section id="results">
+      <h2><span class="num">Status</span>Results Achieved</h2>
+
+      <h3>Detection &mdash; grouped 5-fold CV, out-of-fold, n = 1,797</h3>
+      <div class="metrics">
+        <div class="metric"><div class="v">0.962</div><div class="k">Precision</div><div class="d">&plusmn; 0.012 across folds</div></div>
+        <div class="metric"><div class="v">0.939</div><div class="k">Recall</div><div class="d">&plusmn; 0.011 across folds</div></div>
+        <div class="metric"><div class="v">0.950</div><div class="k">F1</div><div class="d">baseline 0.565</div></div>
+        <div class="metric"><div class="v">0.986</div><div class="k">PR-AUC</div><div class="d">baseline 0.719</div></div>
+      </div>
+
+      <div class="table-scroll">
+        <table>
+          <thead><tr><th>Metric</th><th class="num">Model</th><th class="num">Rules baseline</th><th class="num">Improvement</th></tr></thead>
+          <tbody>
+            <tr><td>Precision</td><td class="num">0.9623</td><td class="num">0.8421</td><td class="num">+0.120</td></tr>
+            <tr><td>Recall</td><td class="num">0.9388</td><td class="num">0.4276</td><td class="num">+0.511</td></tr>
+            <tr><td>F1</td><td class="num">0.9504</td><td class="num">0.5650</td><td class="num"><strong>+0.385</strong></td></tr>
+            <tr><td>PR-AUC</td><td class="num">0.9856</td><td class="num">0.7191</td><td class="num">+0.267</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <p>Confusion matrix: <strong>TP 843 &middot; FP 33 &middot; FN 55 &middot; TN 866</strong>.
+        The 55 false negatives are the number that matters &mdash; a wrongly flagged package
+        costs a developer minutes, a missed one ships malware.</p>
+
+      <h3>Reachability &mdash; the central claim</h3>
+      <div class="headline">
+        <div><div class="big">92</div><div class="lbl">advisories reported</div></div>
+        <div class="arrow">&rarr;</div>
+        <div class="reach"><div class="big">3</div><div class="lbl">actually reachable</div></div>
+        <div class="cut" style="margin-left:auto"><div class="big">97%</div><div class="lbl">ruled out as unreachable</div></div>
+      </div>
+      <pre class="code"><code>app  →  app.main  →  app.bootstrap  →  config.load_settings  →  yaml.load
+      app.py:31      app.py:26          app.py:21               config.py:18</code></pre>
+      <p>The remediation plan ranks <code>pyyaml</code> (3 fixes, all reachable)
+        <strong>above</strong> <code>pillow</code> (56 fixes, none reachable). Ordering by
+        raw count inverts that and sends the developer to fix the wrong thing first.</p>
+
+      <h3>Detector comparison in practice</h3>
+      <p>On the same demo project the rules baseline flags <strong>six</strong> packages;
+        the trained model flags <strong>one</strong>. Large mature libraries genuinely do
+        call <code>eval</code>, spawn processes and read config paths &mdash; the model has
+        learned this is unremarkable at that scale, and a weighted-sum engine cannot.</p>
+
+      <div class="metrics">
+        <div class="metric plain"><div class="v">110</div><div class="k">Tests passing</div><div class="d">fully offline</div></div>
+        <div class="metric plain"><div class="v">11.2k</div><div class="k">Lines of Python</div><div class="d">ruff clean</div></div>
+        <div class="metric plain"><div class="v">53</div><div class="k">Logged decisions</div><div class="d">with rejected alternatives</div></div>
+      </div>
+    </section>
+
+    <!-- ================= 6 ================= -->
+    <section id="limits">
+      <h2><span class="num">Honesty</span>Limitations &amp; Future Work</h2>
+      <p>Stated plainly, because a security tool that overstates its certainty is worse
+        than one that admits a gap.</p>
+      <ol>
+        <li><strong>npm reachability is import-level only.</strong> Symbol-level
+          JavaScript analysis requires solving dynamic <code>require</code>, bundler
+          output and monkey-patching.</li>
+        <li><strong>&ldquo;Not statically reachable&rdquo; &ne; &ldquo;not
+          exploitable.&rdquo;</strong> Dynamic dispatch, <code>getattr</code> indirection
+          and reflection are not resolved.</li>
+        <li><strong>Survivorship bias.</strong> Training malware is malware that was
+          <em>caught</em>; real recall is likely below the measured 0.939.</li>
+        <li><strong>Artificial class balance.</strong> The corpus is ~50/50; a real
+          registry is closer to 1-in-10,000, so deployment precision would be lower.</li>
+        <li><strong>Structural features rank high</strong> partly because malicious
+          samples are small droppers and popular benign packages are large libraries
+          &mdash; a corpus property as well as real signal.</li>
+        <li><strong>The curated symbol table covers ~35 packages</strong>, so many
+          advisories resolve to <code>ASSUMED_REACHABLE</code> rather than a precise
+          verdict.</li>
+      </ol>
+
+      <h4>Planned for Review 2</h4>
+      <p>Expand the vulnerable-symbol table; investigate the 55 false negatives; offline
+        mode with a bundled advisory snapshot; CI/CD integration as a GitHub Action;
+        evaluation across a wider set of real projects.</p>
+    </section>
+
+  </main>
+
+  <footer>
+    <p>ChainGuard &middot; Review 1 &middot; Malicious samples: DataDog
+      malicious-software-packages-dataset (Apache-2.0). Advisories: OSV.dev. Benign
+      corpus: npm and PyPI. All analysis is static &mdash; no scanned package is ever
+      executed.</p>
+  </footer>
+
+</div>

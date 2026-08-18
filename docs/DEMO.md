@@ -86,7 +86,7 @@ python -m chainguard scan-package express --ecosystem npm
 ```
 
 > **If asked "does it just look for known bad names?"** — no. Name similarity is
-> 4 of 55 features. Show the Model tab's feature-importance chart.
+> 4 of 58 features. Show the Model tab's feature-importance chart.
 
 > **If asked to scan a live typosquat** — try it (`scan-package reqeusts`). It
 > reports **"Not inspected — NOT confirmed clean"**, because the package has been

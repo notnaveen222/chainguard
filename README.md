@@ -7,7 +7,7 @@ ChainGuard scans a project's dependency tree and answers two questions that
 existing tooling answers badly:
 
 1. **Is any of this deliberately malicious?** A machine-learning classifier over
-   55 static-analysis features detects typosquats, install-time payloads,
+   58 static-analysis features detects typosquats, install-time payloads,
    obfuscated code and credential exfiltration — including in packages it has
    never seen.
 2. **Which of the reported CVEs actually matter?** Rather than dumping every
@@ -127,7 +127,7 @@ The dataset build downloads ~1,800 packages and takes roughly an hour. See
       install hooks · typosquatting                        vulnerable symbols
                         │                                                   │
                         ▼                                                   ▼
-             55-feature vector                              REACHABILITY ANALYSIS
+             58-feature vector                              REACHABILITY ANALYSIS
                         │                                   call graph of your code
                         ▼                                   ↓          ↓
               ML CLASSIFIER                            REACHABLE   not reachable

@@ -311,7 +311,7 @@ def build_metadata(
         "package, or a tiny legitimate utility, sits where the model has little "
         "evidence. The behavioural features are what should generalise, and the "
         "ablation study measures how much work each family is doing.",
-        "The rules-baseline score is itself one of the 55 features, so the model "
+        "The rules-baseline score is itself one of the features, so the model "
         "is a stacked learner over the rules engine rather than an independent "
         "alternative to it. The 'model vs. baseline' comparison should therefore "
         "be read as 'what the learned layer adds on top of the rules', not as two "
