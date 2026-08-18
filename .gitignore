@@ -56,3 +56,8 @@ data/models/*.pkl
 .idea/
 .DS_Store
 Thumbs.db
+
+# PPT build tooling
+docs/review1/node_modules/
+docs/review1/package-lock.json
+docs/review1/preview.html
