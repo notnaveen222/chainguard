@@ -11,7 +11,9 @@ existing tooling answers badly:
    obfuscated code and credential exfiltration — including in packages it has
    never seen.
 2. **Which of the reported CVEs actually matter?** Rather than dumping every
-   advisory on a developer, ChainGuard performs **reachability analysis**: it
+   advisory on a developer, ChainGuard
+
+okay performs **reachability analysis**: it
    builds a call graph of the application, determines whether each vulnerable
    function is genuinely invoked, and shows the call path as proof.
 
