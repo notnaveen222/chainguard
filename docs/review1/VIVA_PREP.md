@@ -77,6 +77,22 @@ A rules-only weighted-sum engine over the same signals, scored on the same data:
 F1 0.565 against the model's 0.950. Without that comparison, "we used machine
 learning" is an assertion, not a result.
 
+**"How does this compare to published, open-source tools — not just your own baseline?"**
+The closest recent independent benchmark is Guo et al., *"How Effective Are NPM
+Malicious Package Detectors? A Large-Scale Empirical Study"* (arXiv:2603.27549,
+March 2026, dataset public on Figshare). They evaluate 11 tools on 6,420
+malicious + 7,288 benign npm packages. **Best conventional/static tool: GuardDog
+at 93.32% F1. Best overall: IntelGuard, an LLM-based tool, at 95.98% F1.** Our
+model reports 94.75% F1 — ahead of every non-LLM tool in their benchmark,
+0.77 points off their best LLM-based tool, without needing an LLM at inference
+time. **Caveat we say out loud, not hide:** this is not a head-to-head run —
+their packages, ours, and PyPI-vs-npm mix all differ. Their dataset being public
+means the rigorous next step is to actually run our trained classifier on their
+labelled samples and report precision/recall/F1 on *their* data directly; that
+hasn't been done yet. Until then this is a same-ballpark comparison against the
+strongest available open, methodologically transparent benchmark — not a
+verified win.
+
 **"Which features matter most?"**
 Structural ones rank highest — and I'll be honest about why that is only partly a
 real signal. Malicious samples are overwhelmingly small single-purpose droppers;

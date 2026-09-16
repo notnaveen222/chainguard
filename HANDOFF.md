@@ -228,38 +228,37 @@ A teammate asked (via WhatsApp, relayed mid-session) for an **open-source,
 recent benchmark** where this project's numbers can be shown to beat it, with
 a citable link.
 
-**Strongest candidate found:** Guo et al., *"Understanding NPM Malicious
-Package Detection: A Benchmark-Driven Empirical Analysis"*
-([arXiv:2603.27549](https://arxiv.org/abs/2603.27549), submitted March 2026,
-revised August 2026 — genuinely recent). Combines 5 existing open datasets
-(BKC, DONAPI, DataDog, MalOSS, Maltracker) into 6,420 malicious + 7,288 benign
-npm packages; benchmarks 8 real open-source tools. Best reported: **GuardDog
-(DataDog's own open-source scanner) at 93.32% F1.**
+**Strongest candidate found (verified 2026-09-16):** Guo et al., actual title
+*"How Effective Are NPM Malicious Package Detectors? A Large-Scale Empirical
+Study"* ([arXiv:2603.27549](https://arxiv.org/abs/2603.27549), v1 March 2026,
+v2 August 2026 — the title in earlier notes was wrong, arXiv ID is correct).
+Benchmarks 11 tools / 16 variants on 6,420 malicious + 7,288 benign npm
+packages. **Correction to the number previously recorded here: 93.32% F1
+(GuardDog) is only the best among *conventional/static* tools. The paper's
+actual best overall is IntelGuard, LLM-based, at 95.98% F1** (precision 98.24,
+recall 93.82). GuardDog: precision 96.99, recall 89.92, F1 93.32. **Their
+dataset IS publicly released**: Figshare DOI
+[10.6084/m9.figshare.31869370](https://doi.org/10.6084/m9.figshare.31869370)
+(found in the paper's Data Availability section).
 
-**Do NOT just write "we beat 93.32%" and stop there — that is not established
-yet and would repeat the exact overclaiming mistake already caught once this
-session (§3).** Our 0.9475 F1 is on a *different* dataset (ours: 898/899,
-PyPI+npm mixed, DataDog source only). To make a legitimate claim:
+**Do NOT write "we beat 93.32%" as if that's the paper's headline — it isn't,
+IntelGuard's 95.98% is, and citing only the second-best number to a panel that
+might have read the paper is the same overclaiming mistake as §3, just
+relocated.** The honest, panel-safe framing (now written into
+`docs/review1/VIVA_PREP.md`, methodology section): our 0.9475 F1 beats every
+non-LLM/conventional tool in their benchmark including GuardDog, sits 0.77
+points below their LLM-based best, and does so without an LLM at inference
+time — stated alongside the caveat that this is not a head-to-head run, just a
+same-ballpark comparison against the strongest available open benchmark.
 
-1. Check whether Guo et al.'s combined benchmark dataset (or at least their
-   npm-only subset) has a public, downloadable release — check the paper's
-   GitHub/artifact link directly (not yet checked this session).
-2. If it does: run our already-trained classifier (`data/models/classifier.joblib`)
-   against their labelled samples — this means extracting our 58 features from
-   *their* packages (reuse `analysis/engine.py::analyse_package`, our download/
-   analysis pipeline already works on any npm package) and scoring with
-   `ml/model.py`'s existing inference path. Report precision/recall/F1 on
-   *their* data, honestly, whatever it turns out to be.
-3. If their full dataset isn't public but GuardDog is (it is — DataDog's own
-   open-source tool), a fallback: run our detector against a hand-picked
-   sample of GuardDog's own known-malicious test cases if those are published
-   separately, or at minimum cite the paper as *context* ("recent published
-   benchmark puts the best open tool at 93.32% F1; ours, measured on a
-   differently-sourced dataset with a comparable grouped-CV methodology,
-   reports 94.75%") — with the caveat stated out loud, not hidden. A caveated
-   true claim beats an uncaveated shaky one.
-
-This is real, scoped work for next session — not something to rush now.
+**Still open, real work for a future session, not done:** their dataset being
+public means the rigorous version of this claim is to actually run our trained
+classifier (`data/models/classifier.joblib`) against their labelled npm
+samples — extract our 58 features via `analysis/engine.py::analyse_package`
+(already works on any npm package) and score with `ml/model.py`'s existing
+inference path, reporting precision/recall/F1 on *their* data directly,
+whatever it turns out to be. Do this before claiming a verified win rather than
+a same-ballpark comparison.
 
 ---
 
