@@ -23,6 +23,7 @@ from typing import Optional
 from pydantic import BaseModel, Field
 
 from chainguard.analysis.base import FileAnalysis
+from chainguard.analysis.dataflow import ConfirmedFlow
 from chainguard.analysis.features import PackageFeatures, build_features
 from chainguard.analysis.js_ast import analyse_javascript_file
 from chainguard.analysis.python_ast import analyse_python_file
@@ -64,6 +65,11 @@ class AnalysisResult(BaseModel):
     ref: PackageRef
     signals: list[Signal] = Field(default_factory=list)
     features: PackageFeatures = Field(default_factory=PackageFeatures)
+
+    #: Traced credential-exfiltration paths (analysis/dataflow.py), carried
+    #: through so a project scan can classify each one's exposure — see
+    #: analysis/exposure.py and Stage 5 in scanner.py.
+    confirmed_flows: list[ConfirmedFlow] = Field(default_factory=list)
 
     typosquat_target: Optional[str] = None
     typosquat_kind: Optional[str] = None
@@ -356,6 +362,8 @@ def analyse_package(
             result.typosquat_kind = typosquat.kind
 
     # --- assemble --------------------------------------------------------------- #
+    for analysis in analyses:
+        result.confirmed_flows.extend(analysis.confirmed_flows)
     result.signals = sorted(signals, key=lambda s: (-s.severity.rank, s.code))
     result.features = build_features(
         signals=result.signals,

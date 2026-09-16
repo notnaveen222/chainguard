@@ -452,6 +452,25 @@ _register(
     Severity.CRITICAL,
     weight=6.0,
 )
+_register(
+    "CONFIRMED_CREDENTIAL_EXFILTRATION",
+    "Credential data provably reaches a network call",
+    "Static data-flow tracing followed a specific credential-shaped value from "
+    "where it was read (a sensitive file path or a secret-looking environment "
+    "variable) to a network call it was passed into — not merely co-occurrence "
+    "in the same file. See analysis/dataflow.py.",
+    SignalCategory.EXFILTRATION,
+    Severity.CRITICAL,
+    # Deliberately NOT added to _SIGNAL_TO_FEATURE in features.py. It is new,
+    # stronger evidence layered on top of the existing (and already-trained,
+    # already-evaluated) exfil_credentials_to_network feature, not a
+    # replacement for it. Wiring it into the feature vector would change what
+    # the already-trained classifier is scored against without retraining on
+    # the new distribution — a silent train/serve skew. This signal is for
+    # human-facing evidence and the exposure classification in
+    # analysis/exposure.py, and is intentionally invisible to the classifier.
+    weight=6.0,
+)
 
 # --- Metadata --------------------------------------------------------------- #
 

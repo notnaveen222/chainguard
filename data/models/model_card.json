@@ -61,22 +61,22 @@
     "rules_baseline_score"
   ],
   "algorithm": "gradient_boosting",
-  "trained_at": "2026-08-17T20:04:45.189438+00:00",
+  "trained_at": "2026-09-16T12:33:29.629766+00:00",
   "n_samples": 1797,
   "n_malicious": 898,
   "n_benign": 899,
   "metrics": {
-    "accuracy": 0.951,
-    "precision": 0.9623,
-    "recall": 0.9388,
-    "f1": 0.9504,
-    "roc_auc": 0.9803,
-    "pr_auc": 0.9856,
+    "accuracy": 0.9482,
+    "precision": 0.96,
+    "recall": 0.9354,
+    "f1": 0.9475,
+    "roc_auc": 0.9793,
+    "pr_auc": 0.9851,
     "confusion_matrix": {
-      "true_negative": 866,
-      "false_positive": 33,
-      "false_negative": 55,
-      "true_positive": 843
+      "true_negative": 864,
+      "false_positive": 35,
+      "false_negative": 58,
+      "true_positive": 840
     },
     "threshold": 0.5,
     "support": {
@@ -90,8 +90,8 @@
         "precision": 0.9435,
         "recall": 0.9382,
         "f1": 0.9408,
-        "roc_auc": 0.9821,
-        "pr_auc": 0.9863,
+        "roc_auc": 0.9813,
+        "pr_auc": 0.986,
         "confusion_matrix": {
           "true_negative": 172,
           "false_positive": 10,
@@ -105,17 +105,17 @@
         }
       },
       {
-        "accuracy": 0.961,
-        "precision": 0.9598,
-        "recall": 0.9598,
-        "f1": 0.9598,
-        "roc_auc": 0.9827,
-        "pr_auc": 0.9876,
+        "accuracy": 0.9582,
+        "precision": 0.9595,
+        "recall": 0.954,
+        "f1": 0.9568,
+        "roc_auc": 0.9832,
+        "pr_auc": 0.9878,
         "confusion_matrix": {
           "true_negative": 178,
           "false_positive": 7,
-          "false_negative": 7,
-          "true_positive": 167
+          "false_negative": 8,
+          "true_positive": 166
         },
         "threshold": 0.5,
         "support": {
@@ -124,17 +124,17 @@
         }
       },
       {
-        "accuracy": 0.9499,
-        "precision": 0.9775,
-        "recall": 0.9255,
-        "f1": 0.9508,
-        "roc_auc": 0.976,
+        "accuracy": 0.9471,
+        "precision": 0.9774,
+        "recall": 0.9202,
+        "f1": 0.9479,
+        "roc_auc": 0.9761,
         "pr_auc": 0.9834,
         "confusion_matrix": {
           "true_negative": 167,
           "false_positive": 4,
-          "false_negative": 14,
-          "true_positive": 174
+          "false_negative": 15,
+          "true_positive": 173
         },
         "threshold": 0.5,
         "support": {
@@ -143,17 +143,17 @@
         }
       },
       {
-        "accuracy": 0.95,
-        "precision": 0.9581,
-        "recall": 0.9357,
-        "f1": 0.9467,
-        "roc_auc": 0.9853,
-        "pr_auc": 0.988,
+        "accuracy": 0.9528,
+        "precision": 0.9583,
+        "recall": 0.9415,
+        "f1": 0.9499,
+        "roc_auc": 0.9855,
+        "pr_auc": 0.9885,
         "confusion_matrix": {
           "true_negative": 182,
           "false_positive": 7,
-          "false_negative": 11,
-          "true_positive": 160
+          "false_negative": 10,
+          "true_positive": 161
         },
         "threshold": 0.5,
         "support": {
@@ -162,17 +162,17 @@
         }
       },
       {
-        "accuracy": 0.9526,
-        "precision": 0.9722,
-        "recall": 0.9358,
-        "f1": 0.9537,
-        "roc_auc": 0.9774,
-        "pr_auc": 0.9851,
+        "accuracy": 0.9415,
+        "precision": 0.9611,
+        "recall": 0.9251,
+        "f1": 0.9428,
+        "roc_auc": 0.9736,
+        "pr_auc": 0.9826,
         "confusion_matrix": {
-          "true_negative": 167,
-          "false_positive": 5,
-          "false_negative": 12,
-          "true_positive": 175
+          "true_negative": 165,
+          "false_positive": 7,
+          "false_negative": 14,
+          "true_positive": 173
         },
         "threshold": 0.5,
         "support": {
@@ -182,23 +182,23 @@
       }
     ],
     "fold_std": {
-      "precision": 0.0119,
-      "recall": 0.0113,
-      "f1": 0.0064
+      "precision": 0.0108,
+      "recall": 0.0121,
+      "f1": 0.0056
     }
   },
   "cv_metrics": {
-    "accuracy": 0.951,
-    "precision": 0.9623,
-    "recall": 0.9388,
-    "f1": 0.9504,
-    "roc_auc": 0.9803,
-    "pr_auc": 0.9856,
+    "accuracy": 0.9482,
+    "precision": 0.96,
+    "recall": 0.9354,
+    "f1": 0.9475,
+    "roc_auc": 0.9793,
+    "pr_auc": 0.9851,
     "confusion_matrix": {
-      "true_negative": 866,
-      "false_positive": 33,
-      "false_negative": 55,
-      "true_positive": 843
+      "true_negative": 864,
+      "false_positive": 35,
+      "false_negative": 58,
+      "true_positive": 840
     },
     "threshold": 0.5,
     "support": {
@@ -212,8 +212,8 @@
         "precision": 0.9435,
         "recall": 0.9382,
         "f1": 0.9408,
-        "roc_auc": 0.9821,
-        "pr_auc": 0.9863,
+        "roc_auc": 0.9813,
+        "pr_auc": 0.986,
         "confusion_matrix": {
           "true_negative": 172,
           "false_positive": 10,
@@ -227,17 +227,17 @@
         }
       },
       {
-        "accuracy": 0.961,
-        "precision": 0.9598,
-        "recall": 0.9598,
-        "f1": 0.9598,
-        "roc_auc": 0.9827,
-        "pr_auc": 0.9876,
+        "accuracy": 0.9582,
+        "precision": 0.9595,
+        "recall": 0.954,
+        "f1": 0.9568,
+        "roc_auc": 0.9832,
+        "pr_auc": 0.9878,
         "confusion_matrix": {
           "true_negative": 178,
           "false_positive": 7,
-          "false_negative": 7,
-          "true_positive": 167
+          "false_negative": 8,
+          "true_positive": 166
         },
         "threshold": 0.5,
         "support": {
@@ -246,17 +246,17 @@
         }
       },
       {
-        "accuracy": 0.9499,
-        "precision": 0.9775,
-        "recall": 0.9255,
-        "f1": 0.9508,
-        "roc_auc": 0.976,
+        "accuracy": 0.9471,
+        "precision": 0.9774,
+        "recall": 0.9202,
+        "f1": 0.9479,
+        "roc_auc": 0.9761,
         "pr_auc": 0.9834,
         "confusion_matrix": {
           "true_negative": 167,
           "false_positive": 4,
-          "false_negative": 14,
-          "true_positive": 174
+          "false_negative": 15,
+          "true_positive": 173
         },
         "threshold": 0.5,
         "support": {
@@ -265,17 +265,17 @@
         }
       },
       {
-        "accuracy": 0.95,
-        "precision": 0.9581,
-        "recall": 0.9357,
-        "f1": 0.9467,
-        "roc_auc": 0.9853,
-        "pr_auc": 0.988,
+        "accuracy": 0.9528,
+        "precision": 0.9583,
+        "recall": 0.9415,
+        "f1": 0.9499,
+        "roc_auc": 0.9855,
+        "pr_auc": 0.9885,
         "confusion_matrix": {
           "true_negative": 182,
           "false_positive": 7,
-          "false_negative": 11,
-          "true_positive": 160
+          "false_negative": 10,
+          "true_positive": 161
         },
         "threshold": 0.5,
         "support": {
@@ -284,17 +284,17 @@
         }
       },
       {
-        "accuracy": 0.9526,
-        "precision": 0.9722,
-        "recall": 0.9358,
-        "f1": 0.9537,
-        "roc_auc": 0.9774,
-        "pr_auc": 0.9851,
+        "accuracy": 0.9415,
+        "precision": 0.9611,
+        "recall": 0.9251,
+        "f1": 0.9428,
+        "roc_auc": 0.9736,
+        "pr_auc": 0.9826,
         "confusion_matrix": {
-          "true_negative": 167,
-          "false_positive": 5,
-          "false_negative": 12,
-          "true_positive": 175
+          "true_negative": 165,
+          "false_positive": 7,
+          "false_negative": 14,
+          "true_positive": 173
         },
         "threshold": 0.5,
         "support": {
@@ -304,21 +304,21 @@
       }
     ],
     "fold_std": {
-      "precision": 0.0119,
-      "recall": 0.0113,
-      "f1": 0.0064
+      "precision": 0.0108,
+      "recall": 0.0121,
+      "f1": 0.0056
     }
   },
   "baseline_metrics": {
-    "accuracy": 0.6461,
-    "precision": 0.7323,
+    "accuracy": 0.6472,
+    "precision": 0.7349,
     "recall": 0.4599,
-    "f1": 0.565,
-    "roc_auc": 0.7757,
-    "pr_auc": 0.7191,
+    "f1": 0.5658,
+    "roc_auc": 0.7761,
+    "pr_auc": 0.7182,
     "confusion_matrix": {
-      "true_negative": 748,
-      "false_positive": 151,
+      "true_negative": 750,
+      "false_positive": 149,
       "false_negative": 485,
       "true_positive": 413
     },
@@ -331,232 +331,232 @@
   },
   "ablation": {
     "install_execution": {
-      "f1": 0.9475,
-      "pr_auc": 0.9854,
-      "recall": 0.9343,
-      "precision": 0.9611
+      "f1": 0.9476,
+      "pr_auc": 0.9855,
+      "recall": 0.9365,
+      "precision": 0.959
     },
     "dynamic_execution": {
-      "f1": 0.9474,
-      "pr_auc": 0.9849,
-      "recall": 0.9332,
-      "precision": 0.9621
+      "f1": 0.9532,
+      "pr_auc": 0.9838,
+      "recall": 0.9421,
+      "precision": 0.9647
     },
     "process": {
-      "f1": 0.9469,
-      "pr_auc": 0.9855,
-      "recall": 0.9332,
-      "precision": 0.961
+      "f1": 0.9497,
+      "pr_auc": 0.9843,
+      "recall": 0.9354,
+      "precision": 0.9644
     },
     "network": {
-      "f1": 0.9504,
+      "f1": 0.9514,
+      "pr_auc": 0.9852,
+      "recall": 0.9376,
+      "precision": 0.9656
+    },
+    "credentials": {
+      "f1": 0.9487,
       "pr_auc": 0.9853,
+      "recall": 0.9376,
+      "precision": 0.9601
+    },
+    "obfuscation": {
+      "f1": 0.9481,
+      "pr_auc": 0.9858,
+      "recall": 0.9354,
+      "precision": 0.9611
+    },
+    "exfiltration": {
+      "f1": 0.9504,
+      "pr_auc": 0.9844,
       "recall": 0.9388,
       "precision": 0.9623
     },
-    "credentials": {
-      "f1": 0.9459,
-      "pr_auc": 0.9852,
-      "recall": 0.9343,
-      "precision": 0.9578
-    },
-    "obfuscation": {
-      "f1": 0.9442,
-      "pr_auc": 0.9853,
-      "recall": 0.9321,
-      "precision": 0.9566
-    },
-    "exfiltration": {
-      "f1": 0.9499,
-      "pr_auc": 0.9854,
-      "recall": 0.9399,
-      "precision": 0.9602
-    },
     "metadata": {
-      "f1": 0.9434,
-      "pr_auc": 0.9832,
-      "recall": 0.9276,
-      "precision": 0.9597
+      "f1": 0.9447,
+      "pr_auc": 0.983,
+      "recall": 0.9321,
+      "precision": 0.9577
     },
     "structure": {
-      "f1": 0.9388,
-      "pr_auc": 0.9834,
-      "recall": 0.931,
-      "precision": 0.9468
+      "f1": 0.9422,
+      "pr_auc": 0.9831,
+      "recall": 0.9343,
+      "precision": 0.9502
     },
     "typosquat": {
-      "f1": 0.9486,
-      "pr_auc": 0.9857,
+      "f1": 0.9492,
+      "pr_auc": 0.9853,
       "recall": 0.9354,
-      "precision": 0.9622
+      "precision": 0.9633
     },
     "aggregate": {
-      "f1": 0.9483,
+      "f1": 0.9455,
       "pr_auc": 0.9843,
-      "recall": 0.9399,
-      "precision": 0.9569
+      "recall": 0.9365,
+      "precision": 0.9546
     }
   },
   "feature_importances": [
     [
       "has_repository",
-      0.429203
+      0.455901
     ],
     [
       "file_count",
-      0.247924
-    ],
-    [
-      "total_bytes",
-      0.045895
+      0.241417
     ],
     [
       "rules_baseline_score",
-      0.042716
+      0.044533
     ],
     [
-      "distinct_signal_types",
-      0.035141
+      "total_bytes",
+      0.039188
     ],
     [
       "avg_file_bytes",
-      0.034524
+      0.029149
+    ],
+    [
+      "distinct_signal_types",
+      0.025539
     ],
     [
       "dependency_count",
-      0.015338
-    ],
-    [
-      "medium_signals",
-      0.014505
-    ],
-    [
-      "decode_then_exec",
-      0.013903
-    ],
-    [
-      "max_line_length",
-      0.012604
-    ],
-    [
-      "tiny_package_with_hook",
-      0.011934
-    ],
-    [
-      "parse_failure_ratio",
-      0.011524
-    ],
-    [
-      "process_spawn",
-      0.011238
+      0.017178
     ],
     [
       "description_length",
-      0.011
+      0.015057
+    ],
+    [
+      "tiny_package_with_hook",
+      0.014162
+    ],
+    [
+      "decode_then_exec",
+      0.014022
+    ],
+    [
+      "parse_failure_ratio",
+      0.013015
+    ],
+    [
+      "medium_signals",
+      0.012806
+    ],
+    [
+      "max_line_length",
+      0.011532
     ],
     [
       "total_signals",
-      0.010645
+      0.009479
+    ],
+    [
+      "process_spawn",
+      0.008527
     ],
     [
       "source_file_ratio",
-      0.007602
-    ],
-    [
-      "source_file_count",
-      0.006213
+      0.006641
     ],
     [
       "dynamic_eval",
-      0.005052
+      0.005496
+    ],
+    [
+      "source_file_count",
+      0.004038
     ],
     [
       "typosquat_proximity",
-      0.003303
-    ],
-    [
-      "high_signals",
-      0.00294
+      0.003535
     ],
     [
       "env_bulk_harvest",
-      0.002527
-    ],
-    [
-      "network_access",
-      0.002267
-    ],
-    [
-      "minified_ratio",
-      0.002093
-    ],
-    [
-      "shell_execution",
-      0.002015
-    ],
-    [
-      "env_access",
-      0.002008
+      0.002683
     ],
     [
       "hex_escape_heavy",
-      0.001873
+      0.002551
     ],
     [
-      "install_hook_present",
-      0.001564
-    ],
-    [
-      "dns_exfil",
-      0.001539
-    ],
-    [
-      "critical_signals",
-      0.001271
-    ],
-    [
-      "install_hook_count",
-      0.001232
-    ],
-    [
-      "host_recon",
-      0.001222
-    ],
-    [
-      "install_hook_network",
-      0.001199
-    ],
-    [
-      "suspicious_endpoint",
-      0.001198
-    ],
-    [
-      "setup_py_side_effects",
-      0.00102
+      "network_access",
+      0.002116
     ],
     [
       "file_write_sensitive",
-      0.000963
+      0.002054
+    ],
+    [
+      "install_hook_network",
+      0.001853
+    ],
+    [
+      "shell_execution",
+      0.001774
+    ],
+    [
+      "install_hook_present",
+      0.001705
+    ],
+    [
+      "minified_ratio",
+      0.001616
+    ],
+    [
+      "high_signals",
+      0.00158
+    ],
+    [
+      "host_recon",
+      0.001438
     ],
     [
       "hardcoded_ip",
-      0.000828
+      0.001408
+    ],
+    [
+      "env_access",
+      0.00138
+    ],
+    [
+      "dns_exfil",
+      0.001221
+    ],
+    [
+      "install_hook_count",
+      0.001024
     ],
     [
       "string_array_decoder",
-      0.000646
+      0.000987
+    ],
+    [
+      "suspicious_endpoint",
+      0.000916
+    ],
+    [
+      "setup_py_side_effects",
+      0.000839
     ],
     [
       "dynamic_import",
-      0.000462
+      0.000482
     ],
     [
-      "sensitive_path_access",
-      0.000387
+      "exfil_env_to_network",
+      0.000309
     ],
     [
-      "has_empty_description",
-      0.00032
+      "critical_signals",
+      0.000254
+    ],
+    [
+      "base64_blob",
+      0.000199
     ]
   ],
   "notes": [
@@ -566,6 +566,6 @@
     "Malicious samples: DataDog/malicious-software-packages-dataset (Apache-2.0). Benign samples: real packages from the live npm and PyPI registries.",
     "PR-AUC leads over accuracy: in deployment the class balance is extreme, and a model predicting 'benign' always would score high accuracy while detecting nothing.",
     "Structural features (file_count, total_bytes, source_file_count) rank highly because malicious samples are overwhelmingly small single-purpose droppers while popular benign packages are large libraries. This is a real signal, but it is partly a property of the corpus: a large malicious package, or a tiny legitimate utility, sits where the model has little evidence. The behavioural features are what should generalise, and the ablation study measures how much work each family is doing.",
-    "The rules-baseline score is itself one of the 55 features, so the model is a stacked learner over the rules engine rather than an independent alternative to it. The 'model vs. baseline' comparison should therefore be read as 'what the learned layer adds on top of the rules', not as two unrelated detectors competing. The 'aggregate' row of the ablation study measures exactly how much that feature contributes."
+    "The rules-baseline score is itself one of the features, so the model is a stacked learner over the rules engine rather than an independent alternative to it. The 'model vs. baseline' comparison should therefore be read as 'what the learned layer adds on top of the rules', not as two unrelated detectors competing. The 'aggregate' row of the ablation study measures exactly how much that feature contributes."
   ]
 }

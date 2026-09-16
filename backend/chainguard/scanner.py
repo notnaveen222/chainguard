@@ -31,7 +31,9 @@ from typing import Any, Optional
 
 from pydantic import BaseModel, Field
 
+from chainguard.analysis.dataflow import ConfirmedFlow
 from chainguard.analysis.engine import analyse_package
+from chainguard.analysis.exposure import ExposureResult, classify_exposure
 from chainguard.analysis.signals import Severity, Signal
 from chainguard.config import get_settings
 from chainguard.llm.explain import explain_package
@@ -98,6 +100,49 @@ class VulnerabilityFinding(BaseModel):
         return base * (1.0 if self.reachable else 0.1)
 
 
+class ExfiltrationExposure(BaseModel):
+    """One confirmed credential -> network data-flow path, with its exposure
+    verdict for this specific scan (``analysis/dataflow.py`` +
+    ``analysis/exposure.py``).
+
+    Distinct from ``VulnerabilityFinding``'s reachability fields: those answer
+    "is a *known CVE* reachable", this answers "does a *specific traced
+    behaviour this scan found* actually trigger". Same call-path evidence style,
+    applied to the detector's own findings instead of an advisory database.
+    """
+
+    file: str
+    function_scope: str
+    source_line: int
+    source_kind: str
+    source_evidence: str
+    sink_line: int
+    sink_target: str
+
+    verdict: str = "unknown"
+    reason: str = ""
+    call_path: list[dict[str, Any]] = Field(default_factory=list)
+
+
+def _to_exfiltration(result: ExposureResult) -> ExfiltrationExposure:
+    flow = result.flow
+    return ExfiltrationExposure(
+        file=flow.file,
+        function_scope=flow.function_scope,
+        source_line=flow.source_line,
+        source_kind=flow.source_kind,
+        source_evidence=flow.source_evidence,
+        sink_line=flow.sink_line,
+        sink_target=flow.sink_target,
+        verdict=result.verdict.value,
+        reason=result.reason,
+        call_path=[
+            {"caller": step.caller, "callee": step.callee, "file": step.file, "line": step.line}
+            for step in result.call_path
+        ],
+    )
+
+
 class PackageFinding(BaseModel):
     """Everything known about one package in the dependency tree."""
 
@@ -125,6 +170,17 @@ class PackageFinding(BaseModel):
 
     # Known vulnerabilities
     vulnerabilities: list[VulnerabilityFinding] = Field(default_factory=list)
+
+    #: Confirmed credential-exfiltration data flows, with exposure classification.
+    #: Populated during detection with what can be known immediately
+    #: (install-time paths, or "unknown" pending a project scan), then upgraded
+    #: in Stage 5 once a call graph is available. See ExfiltrationExposure.
+    exfiltration: list[ExfiltrationExposure] = Field(default_factory=list)
+
+    #: Raw traced flows, carried between Stage 3 and Stage 5 so exposure can be
+    #: (re)classified once the reachability call graph exists. Internal pipeline
+    #: state, not part of the public result — excluded from serialization.
+    confirmed_flows: list[ConfirmedFlow] = Field(default_factory=list, exclude=True)
 
     analysis_error: Optional[str] = None
     files_analysed: int = 0
@@ -508,6 +564,19 @@ class Scanner:
                 "all advisories are reported"
             )
 
+        # Re-classify confirmed exfiltration flows now that a call graph exists
+        # (or definitively does not). Install-time flows already resolved to
+        # their final verdict in Stage 3 and are simply re-derived identically
+        # here; the rest move from "unknown" to a real verdict.
+        if analyser is not None and manifest.ecosystem is Ecosystem.PYPI:
+            for finding in findings:
+                if not finding.confirmed_flows:
+                    continue
+                finding.exfiltration = [
+                    _to_exfiltration(classify_exposure(flow, finding.name, analyser))
+                    for flow in finding.confirmed_flows
+                ]
+
         by_key = {f"{f.ecosystem}:{f.name.lower()}:{f.version}": f for f in findings}
         for ref in refs:
             finding = by_key.get(ref.key)
@@ -588,6 +657,18 @@ class Scanner:
                 finding.files_analysed = analysis.files_analysed
                 # Keep the report readable: the highest-severity evidence only.
                 finding.signals = analysis.top_signals(12)
+
+                # Baseline exposure classification with no project to check
+                # reachability against — install-time flows already resolve to
+                # their final verdict here (classify_exposure checks
+                # runs_at_install before it ever looks for an analyser); the
+                # rest resolve to "unknown" and are upgraded in Stage 5 once a
+                # project scan supplies a call graph.
+                finding.confirmed_flows = analysis.confirmed_flows
+                finding.exfiltration = [
+                    _to_exfiltration(classify_exposure(flow, ref.name, analyser=None))
+                    for flow in analysis.confirmed_flows
+                ]
 
             except (RegistryError, NotFoundError) as exc:
                 finding.analysis_error = str(exc)

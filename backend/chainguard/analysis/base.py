@@ -10,6 +10,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass, field
 
+from chainguard.analysis.dataflow import ConfirmedFlow
 from chainguard.analysis.signals import Signal
 
 
@@ -27,6 +28,11 @@ class FileAnalysis:
     path: str
     language: str = "unknown"
     signals: list[Signal] = field(default_factory=list)
+
+    #: Traced credential-read -> network-send paths, proven by data flow rather
+    #: than by co-occurrence. See analysis/dataflow.py. Python only, currently
+    #: covering the credential-theft signal family only.
+    confirmed_flows: list[ConfirmedFlow] = field(default_factory=list)
 
     # --- Behaviour flags, used to derive composite signals ------------------ #
     has_network: bool = False

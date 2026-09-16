@@ -17,6 +17,7 @@ import ast
 from typing import Optional
 
 from chainguard.analysis.base import FileAnalysis
+from chainguard.analysis.dataflow import find_confirmed_flows
 from chainguard.analysis.indicators import (
     CRYPTO_WALLET_MATCHERS,
     HOST_RECON_MATCHERS,
@@ -594,5 +595,37 @@ def analyse_python_file(path: str, source: str) -> FileAnalysis:
 
     if is_setup_py:
         _analyse_setup_py(analysis, tree, visitor)
+
+    # Run after the setup.py pass so `analysis.runs_at_install` is already
+    # final: for PyPI, only setup.py sets it (unlike npm lifecycle hooks, which
+    # are resolved a level up in engine.py, after this function returns).
+    try:
+        flows = find_confirmed_flows(
+            tree, visitor._resolve, NETWORK_SINKS,
+            file=path, runs_at_install=analysis.runs_at_install,
+        )
+    except RecursionError:
+        flows = []
+    for flow in flows:
+        analysis.confirmed_flows.append(flow)
+        install_note = " at install time" if flow.runs_at_install else ""
+        scope_note = (
+            "module level (runs on import)"
+            if flow.function_scope == "<module>"
+            else f"function `{flow.function_scope}`"
+        )
+        analysis.add(
+            make_signal(
+                "CONFIRMED_CREDENTIAL_EXFILTRATION",
+                file=path,
+                line=flow.sink_line,
+                evidence=f"{flow.sink_target}(...)",
+                detail=(
+                    f"Value read on line {flow.source_line} from {flow.source_evidence} "
+                    f"is passed to {flow.sink_target}(...) on line {flow.sink_line}, "
+                    f"inside {scope_note}{install_note}"
+                ),
+            )
+        )
 
     return analysis

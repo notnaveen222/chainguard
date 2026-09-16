@@ -45,6 +45,9 @@ data/*.db-journal
 data/models/*.joblib
 data/models/*.pkl
 !data/models/.gitkeep
+# Trained classifier is committed intentionally so the repo is runnable
+# without a retrain step — see PROGRESS.md / HANDOFF.md §2.
+!data/models/classifier.joblib
 
 # Local config / secrets
 .env
