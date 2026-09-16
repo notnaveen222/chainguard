@@ -426,8 +426,7 @@ def scan_sample(request: SampleScanRequest) -> dict[str, Any]:
     from chainguard.dataset.corpus import analyse_sample
     from chainguard.dataset.vault import SampleVault
     from chainguard.analysis.exposure import classify_exposure
-    from chainguard.llm.explain import explain_package
-    from chainguard.scanner import PackageFinding, ScanResult, _summarise, _to_exfiltration
+    from chainguard.scanner import PackageFinding, ScanResult, _explain_flagged, _summarise, _to_exfiltration
     from chainguard.models.db import save_scan
 
     started = _time.time()
@@ -458,10 +457,7 @@ def scan_sample(request: SampleScanRequest) -> dict[str, Any]:
         exfiltration=[_to_exfiltration(classify_exposure(f, record.name, analyser=None))
                       for f in analysis.confirmed_flows],
     )
-    if finding.is_flagged:
-        explanation = explain_package(finding.name, finding.version, finding.ecosystem, finding.verdict,
-                                      finding.malice_score, finding.signals, finding.typosquat_target)
-        finding.explanation, finding.explanation_source = explanation.text, explanation.source
+    _explain_flagged([finding])  # same hybrid review + explanation path as a real scan
 
     result = ScanResult(
         scan_id=uuid.uuid4().hex[:12], target=f"sample:{record.name}", ecosystem=record.ecosystem,
