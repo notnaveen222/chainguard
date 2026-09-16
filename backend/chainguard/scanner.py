@@ -37,6 +37,7 @@ from chainguard.analysis.exposure import ExposureResult, classify_exposure
 from chainguard.analysis.signals import Severity, Signal
 from chainguard.config import get_settings
 from chainguard.llm.explain import explain_package
+from chainguard.llm.review import AIReview, openai_client, review_package
 from chainguard.logging_setup import get_logger
 from chainguard.ml.model import MalwareClassifier
 from chainguard.models.package import (
@@ -157,6 +158,10 @@ class PackageFinding(BaseModel):
     malice_score: float = 0.0
     verdict: str = "benign"
     score_source: str = "rules-baseline"
+    #: The classifier's own verdict. ``verdict`` is the final one: equal to this
+    #: unless GPT reviewed the package (``ai_review``) and decided otherwise.
+    model_verdict: Optional[str] = None
+    ai_review: Optional[AIReview] = None
     signals: list[Signal] = Field(default_factory=list)
     top_contributors: list[tuple[str, float]] = Field(default_factory=list)
     typosquat_target: Optional[str] = None
@@ -478,7 +483,7 @@ class Scanner:
                 finding.vulnerabilities = _dedupe_vulnerabilities(
                     [_to_finding(v, ref, None) for v in advisories.get(ref.key, [])]
                 )
-            _explain_flagged(findings)
+            await asyncio.to_thread(_explain_flagged, findings)
 
         result.model_source = "model" if self.classifier.is_trained else "rules-baseline"
         _summarise(result)
@@ -596,7 +601,9 @@ class Scanner:
         # Explanations only for packages a human will actually look at. Writing
         # prose for 700 clean dependencies would be wasted work, and with the LLM
         # layer enabled it would be wasted spend too.
-        _explain_flagged(findings)
+        if any(f.is_flagged for f in findings) and get_settings().llm_available:
+            self._report("detect", 0.72, "AI reviewing flagged packages")
+        await asyncio.to_thread(_explain_flagged, findings)
 
         result.stage_timings["reach"] = time.time() - stage_start
         result.model_source = "model" if self.classifier.is_trained else "rules-baseline"
@@ -642,6 +649,10 @@ class Scanner:
                     else:
                         metadata = await pypi.fetch_metadata(ref.name, f"=={ref.version}")
                         contents = await pypi.fetch_contents(metadata)
+                    # "latest" (single-package scans) resolves to a concrete
+                    # version here; advisories must be matched against that.
+                    if metadata.version:
+                        finding.version = metadata.version
 
                 if resolver is not None:
                     resolver.record(ref.name, ref.ecosystem, contents)
@@ -731,16 +742,39 @@ def _to_finding(
 
 
 def _explain_flagged(findings: list[PackageFinding], limit: int = 25) -> None:
-    """Attach a prose explanation to each flagged package.
+    """Hybrid review, then a prose explanation for each flagged package.
 
-    Falls back to a deterministic local summary whenever the LLM layer is
-    disabled or unavailable, which is the default configuration.
+    Stage 2 of detection (see ``llm/review.py``): when an OpenAI key is
+    configured, GPT reviews the highest-scoring flagged packages and its verdict
+    becomes final, with the classifier's verdict preserved in ``model_verdict``.
+    Without a key, or if a review fails, the classifier verdict stands and a
+    deterministic local explanation is used.
     """
+    from concurrent.futures import ThreadPoolExecutor
+
+    for finding in findings:
+        finding.model_verdict = finding.verdict
+
     flagged = sorted(
         (f for f in findings if f.is_flagged), key=lambda f: -f.malice_score
-    )[:limit]
+    )[: max(limit, get_settings().ai_review_max_packages)]
+
+    client = openai_client()
+    if client is not None and flagged:
+        to_review = flagged[: get_settings().ai_review_max_packages]
+        with ThreadPoolExecutor(max_workers=6) as pool:
+            reviews = list(pool.map(lambda f: review_package(f, client), to_review))
+        for finding, review in zip(to_review, reviews):
+            if review is None:
+                continue
+            finding.ai_review = review
+            finding.verdict = review.verdict
+            finding.explanation = f"{review.reasoning} {review.recommendation}".strip()
+            finding.explanation_source = "llm"
 
     for finding in flagged:
+        if finding.explanation:
+            continue
         try:
             explanation = explain_package(
                 finding.name, finding.version, finding.ecosystem,

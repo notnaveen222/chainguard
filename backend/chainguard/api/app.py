@@ -374,7 +374,7 @@ def assistant_chat(request: ChatRequest) -> StreamingResponse:
     if not assistant_available():
         raise HTTPException(
             503,
-            "The AI assistant needs an Anthropic API key. Add ANTHROPIC_API_KEY to the .env "
+            "The AI consultant needs an OpenAI API key. Add OPENAI_API_KEY to the .env "
             "file in the repository root and restart the API.",
         )
     history = [turn.model_dump() for turn in request.messages]

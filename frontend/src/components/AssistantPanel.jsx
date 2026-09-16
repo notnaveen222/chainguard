@@ -5,6 +5,7 @@ import {
   ArrowUp,
   Check,
   FileText,
+  History,
   Loader2,
   RotateCcw,
   ScrollText,
@@ -25,13 +26,16 @@ const TOOL_LABELS = {
   get_model_card: 'Reading model metrics',
   read_logs: 'Reading server logs',
   get_scan_status: 'Checking scan progress',
+  package_history: 'Searching scan history',
+  check_package: 'Analysing package live',
 }
 
 const SUGGESTIONS = [
-  { icon: FileText, text: 'Summarise this scan — what actually needs my attention?' },
-  { icon: Sparkles, text: 'Which flagged packages look like false positives, and why?' },
-  { icon: Wrench, text: 'What should I change or upgrade first?' },
-  { icon: ScrollText, text: 'Check the server logs for errors or warnings.' },
+  { icon: FileText, text: 'Summarise my latest scan. What actually needs my attention?' },
+  { icon: Sparkles, text: 'Can I safely use axios@0.21.1?' },
+  { icon: History, text: 'What happened to fsevents in my scans?' },
+  { icon: Wrench, text: 'What should I upgrade or remove first?' },
+  { icon: ScrollText, text: 'Were there any errors or failed downloads in the logs?' },
 ]
 
 function toolDetail(name, input) {
@@ -148,9 +152,9 @@ export default function AssistantPanel({ open, onClose, scanId, available }) {
             <Sparkles size={14} className="text-violet-200" />
           </div>
           <div className="min-w-0">
-            <div className="text-sm font-medium text-foreground leading-none">ChainGuard AI</div>
+            <div className="text-sm font-medium text-foreground leading-none">Security consultant</div>
             <div className="text-[11px] text-muted-foreground mt-1 leading-none truncate">
-              {scanId ? <>Looking at scan <span className="font-mono">{scanId}</span></> : 'Reads your scans, model and logs'}
+              {scanId ? <>Looking at scan <span className="font-mono">{scanId}</span></> : 'Ask about any package, scan or log'}
             </div>
           </div>
           <div className="ml-auto flex items-center gap-1">
@@ -168,16 +172,16 @@ export default function AssistantPanel({ open, onClose, scanId, available }) {
         <div ref={scrollRef} className="flex-1 overflow-y-auto px-4 py-5 space-y-5">
           {!available && (
             <div className="rounded-xl border border-amber-500/25 bg-amber-500/[0.06] p-4 text-sm text-amber-100/90 leading-relaxed">
-              The assistant needs an Anthropic API key. Add <code className="font-mono text-amber-200">ANTHROPIC_API_KEY=…</code> to the
+              The consultant needs an OpenAI API key. Add <code className="font-mono text-amber-200">OPENAI_API_KEY=…</code> to the
               <code className="font-mono text-amber-200"> .env</code> file in the repository root, then restart the API.
             </div>
           )}
 
           {messages.length === 0 && available && (
             <div className="pt-6">
-              <p className="text-lg font-semibold tracking-tight text-foreground">Ask about your scan</p>
+              <p className="text-lg font-semibold tracking-tight text-foreground">Your security consultant</p>
               <p className="text-sm text-muted-foreground mt-1">
-                The assistant looks up the real findings, model metrics and server logs before it answers.
+                Ask anything about your dependencies. It checks real scan results, package history, live package analysis and server logs before answering.
               </p>
               <div className="mt-5 space-y-2">
                 {SUGGESTIONS.map(({ icon: Icon, text }) => (
@@ -266,7 +270,7 @@ export default function AssistantPanel({ open, onClose, scanId, available }) {
                   send()
                 }
               }}
-              placeholder={available ? 'Ask why a package was flagged, what to fix…' : 'API key required'}
+              placeholder={available ? 'e.g. Can I use lodash 4.17.20? What happened to fsevents?' : 'API key required'}
               className="block w-full resize-none bg-transparent px-3.5 pt-3 pb-11 text-sm text-foreground placeholder:text-muted-foreground/60 focus:outline-none disabled:opacity-50"
             />
             <div className="absolute bottom-2 right-2 flex items-center gap-2">
@@ -287,7 +291,7 @@ export default function AssistantPanel({ open, onClose, scanId, available }) {
             </div>
           </div>
           <p className="mt-2 px-1 text-[11px] text-muted-foreground/70">
-            Read-only · uses Claude via your API key · verify important conclusions
+            Uses OpenAI via your API key · reads scans, history and logs · verify important conclusions
           </p>
         </form>
       </aside>

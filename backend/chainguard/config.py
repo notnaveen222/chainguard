@@ -15,7 +15,7 @@ import os
 from functools import lru_cache
 from pathlib import Path
 
-from pydantic import Field, field_validator
+from pydantic import AliasChoices, Field, field_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 # --------------------------------------------------------------------------- #
@@ -134,13 +134,22 @@ class Settings(BaseSettings):
         description="Probability at or above which a package is marked for review.",
     )
 
-    # --- Optional LLM explanation layer ------------------------------------ #
-    # Disabled by default and by design: the system must be fully functional
-    # with no API key and no network. See BUILD_LOG.md D-003.
-    llm_enabled: bool = Field(default=False)
-    llm_model: str = Field(default="claude-sonnet-5")
+    # --- Optional AI layer (OpenAI) ---------------------------------------- #
+    # The system is fully functional with no API key and no network: scans use
+    # the trained classifier and local explanations. With a key, GPT reviews
+    # flagged packages (hybrid verdict), writes explanations and powers the
+    # assistant chat. See BUILD_LOG.md D-003.
+    llm_enabled: bool = Field(default=True)
+    llm_model: str = Field(default="gpt-5.6-luna")
     llm_max_tokens: int = Field(default=1200)
-    anthropic_api_key: str | None = Field(default=None)
+    ai_review_max_packages: int = Field(
+        default=30,
+        description="Most flagged/suspicious packages GPT reviews per scan (highest score first).",
+    )
+    openai_api_key: str | None = Field(
+        default=None,
+        validation_alias=AliasChoices("CHAINGUARD_OPENAI_API_KEY", "OPENAI_API_KEY"),
+    )
 
     # --- Nested limits ----------------------------------------------------- #
     limits: AnalysisLimits = Field(default_factory=AnalysisLimits)
@@ -163,8 +172,8 @@ class Settings(BaseSettings):
 
     @property
     def resolved_api_key(self) -> str | None:
-        """API key from settings, falling back to the standard env var name."""
-        return self.anthropic_api_key or os.environ.get("ANTHROPIC_API_KEY")
+        """OpenAI API key from settings/.env, falling back to the process env."""
+        return self.openai_api_key or os.environ.get("OPENAI_API_KEY")
 
     def ensure_directories(self) -> None:
         """Create the runtime data directories if they do not exist."""

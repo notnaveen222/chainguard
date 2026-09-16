@@ -1,4 +1,4 @@
-"""Interactive analysis assistant — the dashboard's AI chat panel.
+"""AI security consultant — the dashboard's AI chat panel.
 
 Unlike ``explain.py`` (one fixed paragraph per flagged package), this is a
 conversational agent that can *look things up*: it is given read-only tools over
@@ -31,7 +31,6 @@ from chainguard.logging_setup import get_logger
 
 logger = get_logger(__name__)
 
-MODEL = "claude-opus-5"
 MAX_TOOL_ROUNDS = 12
 
 
@@ -254,106 +253,204 @@ def tool_get_scan_status(scan_id: str) -> Any:
     return job.to_dict()
 
 
+def _brief_review(p: dict[str, Any]) -> Optional[dict[str, Any]]:
+    review = p.get("ai_review")
+    if not review:
+        return None
+    return {k: review.get(k) for k in ("verdict", "confidence", "reasoning", "recommendation")}
+
+
+def tool_package_history(package: str, ecosystem: Optional[str] = None) -> Any:
+    """Every stored scan that contained a package, newest first."""
+    from chainguard.models.db import list_scans
+
+    wanted = package.strip().lower()
+    if "@" in wanted[1:]:
+        wanted = wanted[: wanted.rindex("@")]
+    hits = []
+    for scan in list_scans(200):
+        data = _load_scan(scan["scan_id"])
+        for p in (data or {}).get("packages") or []:
+            if p["name"].lower() != wanted:
+                continue
+            if ecosystem and p.get("ecosystem", "").lower() != ecosystem.lower():
+                continue
+            vulns = p.get("vulnerabilities") or []
+            hits.append({
+                "scan_id": scan["scan_id"],
+                "scanned_at": scan.get("created_at"),
+                "scan_target": scan.get("target"),
+                "version": p["version"],
+                "ecosystem": p.get("ecosystem"),
+                "final_verdict": p.get("verdict"),
+                "classifier_verdict": p.get("model_verdict") or p.get("verdict"),
+                "malice_score": round(p.get("malice_score") or 0, 3),
+                "ai_review": _brief_review(p),
+                "strong_signals": [s["code"] for s in p.get("signals") or []
+                                   if s.get("severity") in ("critical", "high")][:8],
+                "not_inspected_reason": p.get("analysis_error")
+                or (None if p.get("files_analysed") else "no analysable files"),
+                "vulnerabilities": len(vulns),
+                "reachable_vulnerabilities": sum(1 for v in vulns if v.get("reachable")),
+                "explanation": p.get("explanation"),
+            })
+    if not hits:
+        return {"package": package, "found": False,
+                "message": "This package does not appear in any stored scan. Use check_package to analyse it now."}
+    return {"package": package, "found": True, "occurrences": hits[:25]}
+
+
+def tool_check_package(name: str, ecosystem: str, version: str = "latest") -> Any:
+    """Download and analyse one package right now (static only), with known CVEs."""
+    import asyncio
+
+    from chainguard.api.jobs import registry
+    from chainguard.models.db import save_scan
+    from chainguard.models.package import Ecosystem
+    from chainguard.scanner import Scanner
+
+    eco = Ecosystem.NPM if ecosystem.strip().lower() == "npm" else Ecosystem.PYPI
+    scanner = Scanner(classifier=registry.classifier)
+    result = asyncio.run(scanner.scan_package(name.strip(), (version or "latest").strip(), eco))
+    try:
+        save_scan(result)
+    except Exception:  # noqa: BLE001 — history is a convenience here
+        logger.debug("Could not store consultant package check")
+    if not result.packages:
+        return {"error": f"No result for {name}"}
+    p = result.packages[0].model_dump(mode="json")
+    vulns = p.get("vulnerabilities") or []
+    return {
+        "scan_id": result.scan_id,
+        "package": f"{p['name']}@{p['version']}",
+        "ecosystem": p["ecosystem"],
+        "could_not_inspect": p.get("analysis_error"),
+        "files_analysed": p.get("files_analysed"),
+        "final_verdict": p.get("verdict"),
+        "classifier_verdict": p.get("model_verdict"),
+        "malice_score": round(p.get("malice_score") or 0, 3),
+        "ai_review": _brief_review(p),
+        "typosquat_target": p.get("typosquat_target"),
+        "signals": [{k: s.get(k) for k in ("code", "severity", "detail", "file", "line", "evidence")}
+                    for s in (p.get("signals") or [])[:15]],
+        "top_contributors": p.get("top_contributors"),
+        "exfiltration_flows": p.get("exfiltration"),
+        "known_vulnerabilities": [
+            {k: v.get(k) for k in ("id", "cve_id", "severity", "cvss_score", "summary", "fixed_version")}
+            for v in vulns[:20]
+        ],
+        "vulnerability_total": len(vulns),
+        "note": "Single-package check: reachability needs the application's source, so these "
+                "vulnerabilities are present in the version, not proven reachable.",
+    }
+
+
 TOOL_HANDLERS = {
     "list_scans": tool_list_scans,
     "get_scan_summary": tool_get_scan_summary,
     "get_package_details": tool_get_package_details,
+    "package_history": tool_package_history,
+    "check_package": tool_check_package,
     "list_vulnerabilities": tool_list_vulnerabilities,
     "get_model_card": tool_get_model_card,
     "read_logs": tool_read_logs,
     "get_scan_status": tool_get_scan_status,
 }
 
+
+def _fn(name: str, description: str, properties: dict[str, Any], required: Optional[list[str]] = None) -> dict[str, Any]:
+    return {
+        "type": "function",
+        "name": name,
+        "description": description,
+        "parameters": {"type": "object", "properties": properties, "required": required or []},
+    }
+
+
 TOOLS: list[dict[str, Any]] = [
-    {
-        "name": "list_scans",
-        "description": "List recently stored scans (newest first) with their headline counts: packages, malicious/suspicious, total and reachable vulnerabilities, duration.",
-        "input_schema": {"type": "object", "properties": {"limit": {"type": "integer", "description": "Max scans, 1-50"}}},
-    },
-    {
-        "name": "get_scan_summary",
-        "description": "Overview of one scan: summary counts, warnings/errors (coverage gaps), flagged packages with their score, top model feature contributors and strongest signals, packages that could not be inspected, and the top remediation actions. Omit scan_id for the most recent scan.",
-        "input_schema": {"type": "object", "properties": {"scan_id": {"type": "string"}}},
-    },
-    {
-        "name": "get_package_details",
-        "description": "Full evidence for one package in a scan: every signal with file:line and snippet, model feature contributors, the generated explanation, confirmed credential-exfiltration flows, and its vulnerabilities with reachability verdicts and call paths. Accepts 'name' or 'name@version' (scoped npm names like '@radix-ui/rect' work).",
-        "input_schema": {
-            "type": "object",
-            "properties": {"package": {"type": "string"}, "scan_id": {"type": "string"}},
-            "required": ["package"],
-        },
-    },
-    {
-        "name": "list_vulnerabilities",
-        "description": "Known vulnerabilities in a scan, reachable first then by CVSS, with the reachability verdict and reason. Filter with reachable=true/false.",
-        "input_schema": {
-            "type": "object",
-            "properties": {"scan_id": {"type": "string"}, "reachable": {"type": "boolean"}, "limit": {"type": "integer"}},
-        },
-    },
-    {
-        "name": "get_model_card",
-        "description": "The trained classifier's metadata: algorithm, dataset size, cross-validated precision/recall/F1/PR-AUC, confusion matrix, rules-baseline comparison, top feature importances, ablation and methodology notes.",
-        "input_schema": {"type": "object", "properties": {}},
-    },
-    {
-        "name": "read_logs",
-        "description": "Recent ChainGuard server log lines (in-memory, since the API started). Filter by minimum level (DEBUG, INFO, WARNING, ERROR) and a case-insensitive substring.",
-        "input_schema": {
-            "type": "object",
-            "properties": {
-                "min_level": {"type": "string", "enum": ["DEBUG", "INFO", "WARNING", "ERROR"]},
-                "contains": {"type": "string"},
-                "limit": {"type": "integer", "description": "Max lines, up to 500"},
-            },
-        },
-    },
-    {
-        "name": "get_scan_status",
-        "description": "Live progress of a scan that is still running (stage, percent, message, error).",
-        "input_schema": {"type": "object", "properties": {"scan_id": {"type": "string"}}, "required": ["scan_id"]},
-    },
+    _fn("list_scans",
+        "List recently stored scans (newest first) with headline counts: packages, malicious/suspicious, "
+        "total and reachable vulnerabilities, duration.",
+        {"limit": {"type": "integer", "description": "Max scans, 1-50"}}),
+    _fn("get_scan_summary",
+        "Overview of one scan: counts, warnings/errors (coverage gaps), flagged packages with classifier "
+        "score, AI review, top feature contributors and strongest signals, packages that could not be "
+        "inspected, top remediation actions. Omit scan_id for the most recent scan.",
+        {"scan_id": {"type": "string"}}),
+    _fn("get_package_details",
+        "Full evidence for one package within one scan: every signal with file:line and snippet, feature "
+        "contributors, AI review, explanation, traced exfiltration flows, vulnerabilities with reachability "
+        "and call paths. Accepts 'name' or 'name@version' (scoped npm names work). Omit scan_id for the "
+        "most recent scan.",
+        {"package": {"type": "string"}, "scan_id": {"type": "string"}}, ["package"]),
+    _fn("package_history",
+        "What happened to a package across ALL stored scans: each scan it appeared in, version, final and "
+        "classifier verdict, AI review, strong signals, whether it could not be inspected (and why), "
+        "vulnerabilities. Use for 'what happened to X' questions.",
+        {"package": {"type": "string"}, "ecosystem": {"type": "string", "enum": ["npm", "PyPI"]}}, ["package"]),
+    _fn("check_package",
+        "Analyse any npm or PyPI package right now: downloads it (never executes it), runs static analysis, "
+        "the classifier and AI review, and looks up known vulnerabilities. Use for 'can I use X?' or "
+        "'is X safe?' when it is not in a scan or a specific version is asked about. Takes 5-60 seconds.",
+        {"name": {"type": "string"}, "ecosystem": {"type": "string", "enum": ["npm", "PyPI"]},
+         "version": {"type": "string", "description": "Exact version, or 'latest'"}},
+        ["name", "ecosystem"]),
+    _fn("list_vulnerabilities",
+        "Known vulnerabilities in a scan, reachable first then by CVSS, with reachability verdict and "
+        "reason. Filter with reachable=true/false.",
+        {"scan_id": {"type": "string"}, "reachable": {"type": "boolean"}, "limit": {"type": "integer"}}),
+    _fn("get_model_card",
+        "The trained classifier's metadata: algorithm, dataset, cross-validated precision/recall/F1/PR-AUC, "
+        "confusion matrix, baseline comparison, feature importances, methodology notes.", {}),
+    _fn("read_logs",
+        "Recent ChainGuard server log lines (in memory, since the API started): scan progress, download "
+        "failures, timeouts, AI review failures, errors. Filter by minimum level and a case-insensitive "
+        "substring such as a package name.",
+        {"min_level": {"type": "string", "enum": ["DEBUG", "INFO", "WARNING", "ERROR"]},
+         "contains": {"type": "string"},
+         "limit": {"type": "integer", "description": "Max lines, up to 500"}}),
+    _fn("get_scan_status", "Live progress of a scan that is still running (stage, percent, message, error).",
+        {"scan_id": {"type": "string"}}, ["scan_id"]),
 ]
-for _tool in TOOLS:
-    _tool["eager_input_streaming"] = True
 
 
-SYSTEM_PROMPT = """You are the analysis assistant built into ChainGuard, a software supply chain security tool. You help a developer understand a scan of their project, judge whether findings are real, and decide what to change.
+SYSTEM_PROMPT = """You are ChainGuard's AI security consultant. A developer talks to you like a trusted colleague about their dependencies and scans: "what happened to this package?", "can I use X?", "is this flag real?", "what should I fix first?", "why did my scan fail?". Give clear, practical advice grounded in real data.
 
-How ChainGuard works, so you can interpret its output:
-- Malicious-package detection: packages are downloaded and statically analysed (never executed). The analyser emits signals (install hooks, eval/dynamic execution, process spawning, network access, credential/sensitive path access, obfuscation, typosquat similarity, composite exfiltration patterns). 58 numeric features derived from those signals plus package structure and metadata feed a calibrated gradient-boosting classifier. Score >= 0.60 is "malicious", >= 0.30 "suspicious". "top_contributors" are the features that pushed that package's score most.
-- Confirmed exfiltration flows come from a separate intra-procedural data-flow tracer (Python only) that proves a credential read reaches a network send, with an exposure verdict (install_time, import_time, call_reachable, call_not_reachable, unknown).
-- Vulnerabilities come from OSV. Reachability: for Python projects, a call graph of the application proves whether the vulnerable function is called and gives a call path. For npm projects reachability is import-level only ("assumed_reachable" means the package is imported but symbol use was not verified) — say so when it matters.
-- Known limitations to keep in mind when judging a result: the classifier was trained on ~2,450 packages (898 real malicious samples; benign packages include real application dependency trees, added because the original benign sample of large popular packages made the model over-flag small utilities). Structure features (file_count, total_bytes, avg_file_bytes) still carry weight, so a flag driven mainly by those with no critical/high code signals deserves scepticism — check the evidence. Scans run before the model was retrained may show such false positives. Large dependency trees can hit the package ceiling and some packages cannot be downloaded ("not inspected" means NOT confirmed clean). Samples scanned from the malware vault are part of the training corpus.
+How ChainGuard works:
+- Detection is hybrid. Every package is downloaded and statically analysed (never executed): signals such as install hooks, eval/dynamic execution, process spawning, network access, credential/sensitive-path access, obfuscation, typosquat similarity and composite exfiltration patterns. A gradient-boosting classifier trained on ~2,450 packages (898 real malware samples; benign includes real application dependency trees) scores each one: >=0.60 malicious, >=0.30 suspicious. GPT then reviews flagged packages and its verdict is final ("final_verdict"/"verdict"); "classifier_verdict"/"model_verdict" is the first-stage result. Point out when the two disagree.
+- Confirmed exfiltration flows come from a Python data-flow tracer proving a credential read reaches a network send, with exposure: install_time, import_time, call_reachable, call_not_reachable, unknown.
+- Vulnerabilities come from OSV. For Python projects a call graph proves whether the vulnerable function is called (with a call path). npm reachability is import-level only ("assumed_reachable"). Single-package checks cannot assess reachability.
+- "Not inspected" means the package could not be downloaded or had no analysable files: NOT confirmed clean. Large trees may hit the package ceiling.
+- The classifier still leans on package size; a flag with no critical/high code evidence deserves scepticism.
 
 How to work:
-- Use the tools to look at the actual data before answering; don't guess at package names, scores or counts. If the user doesn't name a scan, use the most recent one.
-- Ground every claim in the evidence you retrieved (signal codes, file:line, feature contributors, reachability reason, log lines) and be direct about confidence: distinguish "this is clearly malicious", "this looks like a false positive, because...", and "not enough evidence".
-- When asked what to change, give concrete, prioritised actions: dependency upgrades from the remediation plan, packages to remove or pin, threshold or configuration changes, re-running with a source directory, or model/dataset improvements — and say what each would fix.
-- For errors or stuck scans, read the logs and explain the cause plainly.
-- You are read-only: you cannot change verdicts, rerun scans or edit files. Say what the user should do instead.
-- Keep answers concise and skimmable: short paragraphs or brief bullet lists, package names and IDs in `code`."""
+- Look things up with tools before answering; never guess names, scores or counts. For "what happened to X" use package_history, and read_logs filtered by the package name for errors or timeouts. For "can I use X" / "is X safe", check stored scans first, then use check_package for a fresh analysis when needed. If the user doesn't name a scan, use the most recent one.
+- Answer the actual question first in one sentence (e.g. "Yes, `left-pad@1.3.0` looks safe to use." / "Don't install this: it sends your SSH keys to a webhook."), then the evidence (signal codes, file:line, AI review, CVEs with fixed versions), then what to do.
+- For "can I use X": weigh malicious-code evidence, known vulnerabilities (and whether a fixed version exists), and whether it could be inspected. Recommend a specific safe version when one exists.
+- Be honest about uncertainty and limits (static analysis, import-level npm reachability, not-inspected packages).
+- Apart from check_package you are read-only: you cannot change verdicts, delete scans or edit files. Tell the user exactly what to do instead.
+- Keep answers concise and skimmable: short paragraphs or brief bullets, package names and IDs in `code`."""
 
-
-# --------------------------------------------------------------------------- #
-# Chat loop (streams events for the dashboard)
-# --------------------------------------------------------------------------- #
 
 def assistant_available() -> bool:
-    return bool(get_settings().resolved_api_key)
+    return bool(get_settings().llm_available)
 
 
 def _event(kind: str, **payload: Any) -> str:
     return json.dumps({"type": kind, **payload}, default=str) + "\n"
 
 
-def _run_tool(name: str, args: Any) -> tuple[str, bool]:
+def _run_tool(name: str, raw_args: str) -> tuple[str, bool]:
     handler = TOOL_HANDLERS.get(name)
     if handler is None:
         return json.dumps({"error": f"Unknown tool {name}"}), True
+    try:
+        args = json.loads(raw_args or "{}")
+    except json.JSONDecodeError:
+        return json.dumps({"error": "INVALID_JSON", "arguments": raw_args}), True
     if not isinstance(args, dict):
-        return json.dumps({"INVALID_JSON": json.dumps(args, default=str)}), True
+        return json.dumps({"error": "Arguments must be a JSON object"}), True
+    args = {k: v for k, v in args.items() if v is not None}
     try:
         result = handler(**args)
     except TypeError as exc:
@@ -363,99 +460,89 @@ def _run_tool(name: str, args: Any) -> tuple[str, bool]:
         return json.dumps({"error": f"{type(exc).__name__}: {exc}"}), True
     text = json.dumps(result, default=str)
     if len(text) > 60_000:
-        text = text[:60_000] + ' ... [truncated]"'
+        text = text[:60_000] + " ... [truncated]"
     return text, False
 
 
 def run_chat(history: list[dict[str, str]], scan_id: Optional[str] = None) -> Iterator[str]:
-    """Run one assistant turn, yielding newline-delimited JSON events.
+    """Run one consultant turn, yielding newline-delimited JSON events.
 
     Event types: ``tool`` (a tool call started), ``tool_result`` (it finished),
     ``text`` (streamed answer text), ``error`` and ``done``.
     """
-    import anthropic
+    from chainguard.llm.review import openai_client
+
+    client = openai_client()
+    if client is None:
+        yield _event("error", message="Add OPENAI_API_KEY to the .env file in the repository root and restart the API.")
+        yield _event("done")
+        return
+
+    import openai
 
     settings = get_settings()
-    client = anthropic.Anthropic(api_key=settings.resolved_api_key)
-
-    messages: list[dict[str, Any]] = []
+    conversation: list[Any] = []
     for turn in history[-30:]:
         role = turn.get("role")
         content = (turn.get("content") or "").strip()
         if role in ("user", "assistant") and content:
-            messages.append({"role": role, "content": content})
-    if not messages or messages[-1]["role"] != "user":
+            conversation.append({"role": role, "content": content})
+    if not conversation or conversation[-1]["role"] != "user":
         yield _event("error", message="The last message must be from the user.")
+        yield _event("done")
         return
     if scan_id:
-        messages[-1] = {
+        conversation[-1] = {
             "role": "user",
-            "content": f"{messages[-1]['content']}\n\n(Context: the user is currently viewing scan `{scan_id}`.)",
+            "content": f"{conversation[-1]['content']}\n\n(Context: the user is currently viewing scan `{scan_id}`.)",
         }
 
-    json_retries = 0
-    rounds = 0
     try:
-        while rounds < MAX_TOOL_ROUNDS:
-            try:
-                with client.beta.messages.stream(
-                    model=MODEL,
-                    max_tokens=32000,
-                    system=[{"type": "text", "text": SYSTEM_PROMPT, "cache_control": {"type": "ephemeral"}}],
-                    tools=TOOLS,
-                    messages=messages,
-                    thinking={"type": "adaptive"},
-                    output_config={"effort": "medium"},
-                    betas=["server-side-fallback-2026-07-01"],
-                    fallbacks="default",
-                ) as stream:
-                    for event in stream:
-                        if event.type == "text":
-                            yield _event("text", delta=event.text)
-                    response = stream.get_final_message()
-                json_retries = 0
-            except ValueError:
-                json_retries += 1
-                if json_retries > 2:
-                    raise
-                continue
-
-            if response.stop_reason == "pause_turn":
-                messages.append({"role": "assistant", "content": response.content})
-                continue
-            if response.stop_reason == "refusal":
-                yield _event("error", message="The model declined to answer this request.")
+        for _ in range(MAX_TOOL_ROUNDS):
+            stream = client.responses.create(
+                model=settings.llm_model,
+                instructions=SYSTEM_PROMPT,
+                input=conversation,
+                tools=TOOLS,
+                stream=True,
+            )
+            response = None
+            for event in stream:
+                if event.type == "response.output_text.delta":
+                    yield _event("text", delta=event.delta)
+                elif event.type == "response.completed":
+                    response = event.response
+                elif event.type in ("response.failed", "error"):
+                    failure = getattr(getattr(event, "response", None), "error", None)
+                    yield _event("error", message=f"OpenAI error: {failure or getattr(event, 'message', '')}")
+            if response is None:
                 break
 
-            tool_uses = [b for b in response.content if b.type == "tool_use"]
-            if not tool_uses:
-                if response.stop_reason == "max_tokens":
-                    yield _event("error", message="The answer hit the length limit and was cut off.")
-                break
-            if response.stop_reason == "max_tokens":
-                yield _event("error", message="A tool request was cut off; try a narrower question.")
+            calls = [item for item in response.output if item.type == "function_call"]
+            if not calls:
                 break
 
-            results = []
-            for block in tool_uses:
-                yield _event("tool", id=block.id, name=block.name, input=block.input)
-                content, is_error = _run_tool(block.name, block.input)
-                yield _event("tool_result", id=block.id, name=block.name, is_error=is_error, size=len(content))
-                results.append({"type": "tool_result", "tool_use_id": block.id, "content": content, "is_error": is_error})
-            messages.append({"role": "assistant", "content": response.content})
-            messages.append({"role": "user", "content": results})
-            rounds += 1
+            conversation += response.output
+            for call in calls:
+                try:
+                    shown = json.loads(call.arguments or "{}")
+                except json.JSONDecodeError:
+                    shown = {}
+                yield _event("tool", id=call.call_id, name=call.name, input=shown)
+                output, is_error = _run_tool(call.name, call.arguments)
+                yield _event("tool_result", id=call.call_id, name=call.name, is_error=is_error, size=len(output))
+                conversation.append({"type": "function_call_output", "call_id": call.call_id, "output": output})
         else:
             yield _event("error", message="Stopped after too many tool calls.")
-    except anthropic.AuthenticationError:
-        yield _event("error", message="The Anthropic API key was rejected. Check ANTHROPIC_API_KEY in .env.")
-    except anthropic.RateLimitError:
-        yield _event("error", message="Rate limited by the Anthropic API. Try again in a moment.")
-    except anthropic.APIConnectionError:
-        yield _event("error", message="Could not reach the Anthropic API. Check the network connection.")
-    except anthropic.APIStatusError as exc:
+    except openai.AuthenticationError:
+        yield _event("error", message="The OpenAI API key was rejected. Check OPENAI_API_KEY in .env.")
+    except openai.RateLimitError:
+        yield _event("error", message="Rate limited by the OpenAI API (or out of credit). Try again shortly.")
+    except openai.APIConnectionError:
+        yield _event("error", message="Could not reach the OpenAI API. Check the network connection.")
+    except openai.APIStatusError as exc:
         logger.warning("Assistant API error: %s", exc)
-        yield _event("error", message=f"Anthropic API error ({exc.status_code}): {exc.message}")
+        yield _event("error", message=f"OpenAI API error ({exc.status_code}): {exc.message}")
     except Exception as exc:  # noqa: BLE001 — never crash the stream silently
         logger.exception("Assistant failed")
         yield _event("error", message=f"Assistant error: {exc}")

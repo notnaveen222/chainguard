@@ -181,34 +181,20 @@ def explain_package(
     fallback = local_explanation(name, version, verdict, signals, typosquat_target)
 
     settings = get_settings()
-    if not settings.llm_available:
+    from chainguard.llm.review import openai_client  # noqa: PLC0415 — avoids an import cycle
+
+    client = openai_client()
+    if client is None:
         return fallback
 
     try:
-        import anthropic  # noqa: PLC0415 — optional dependency, imported lazily
-    except ImportError:
-        logger.debug("anthropic package not installed; using the local explanation")
-        return fallback
-
-    try:
-        client = anthropic.Anthropic(api_key=settings.resolved_api_key)
-        response = client.messages.create(
+        response = client.responses.create(
             model=settings.llm_model,
-            max_tokens=settings.llm_max_tokens,
-            system=_SYSTEM_PROMPT,
-            messages=[
-                {
-                    "role": "user",
-                    "content": _build_prompt(
-                        name, version, ecosystem, verdict, score, signals, typosquat_target
-                    ),
-                }
-            ],
+            instructions=_SYSTEM_PROMPT,
+            input=_build_prompt(name, version, ecosystem, verdict, score, signals, typosquat_target),
+            max_output_tokens=settings.llm_max_tokens,
         )
-        text = "".join(
-            block.text for block in response.content if getattr(block, "type", "") == "text"
-        ).strip()
-
+        text = (response.output_text or "").strip()
         if not text:
             return fallback
         return Explanation(text=text, source="llm", model=settings.llm_model)

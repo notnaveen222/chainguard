@@ -9,6 +9,7 @@ import {
   FolderSearch,
   KeyRound,
   Loader2,
+  Bot,
   Bug,
   Package,
   Play,
@@ -410,6 +411,9 @@ function ScanResult({ result, onAskAI }) {
   const flagged = (result.packages || []).filter(
     (p) => p.verdict === 'malicious' || p.verdict === 'suspicious',
   )
+  const cleared = (result.packages || []).filter(
+    (p) => p.ai_review && p.verdict === 'benign' && ['malicious', 'suspicious'].includes(p.model_verdict),
+  )
 
   return (
     <div className="space-y-6 animate-fade-in">
@@ -472,6 +476,7 @@ function ScanResult({ result, onAskAI }) {
       <ReachabilityHeadline summary={summary} />
 
       {flagged.length > 0 && <FlaggedPackages packages={flagged} />}
+      {cleared.length > 0 && <ClearedPackages packages={cleared} />}
       <UnanalysedPackages packages={result.packages || []} />
       <VulnerabilityTable vulnerabilities={result.packages?.flatMap((p) => p.vulnerabilities || []) || []} />
       {result.remediation?.length > 0 && <RemediationPlan actions={result.remediation} />}
@@ -528,6 +533,11 @@ function FlaggedPackages({ packages }) {
                 <ChevronRight size={15} className={cn('text-muted-foreground transition-transform', open && 'rotate-90')} />
                 <span className="font-mono text-sm text-foreground">{key}</span>
                 <Badge tone={pkg.verdict} dot>{pkg.verdict}</Badge>
+                {pkg.ai_review && (
+                  <span className="inline-flex items-center gap-1 text-[11px] text-violet-200/80">
+                    <Bot size={12} /> AI reviewed
+                  </span>
+                )}
                 {pkg.typosquat_target && (
                   <span className="text-xs text-amber-400">resembles “{pkg.typosquat_target}”</span>
                 )}
@@ -536,7 +546,9 @@ function FlaggedPackages({ packages }) {
 
               {open && (
                 <div className="px-5 pb-5 pt-1 space-y-5 animate-fade-in">
-                  {pkg.explanation && (
+                  {pkg.ai_review && <AIReviewCard pkg={pkg} />}
+
+                  {pkg.explanation && !pkg.ai_review && (
                     <div className="rounded-lg border border-border bg-white/[0.02] p-4">
                       <p className="eyebrow mb-2">
                         Assessment
@@ -602,6 +614,58 @@ function FlaggedPackages({ packages }) {
             </div>
           )
         })}
+      </div>
+    </Card>
+  )
+}
+
+/** GPT's second-stage verdict for a flagged package, next to the classifier's. */
+function AIReviewCard({ pkg }) {
+  const review = pkg.ai_review
+  const disagrees = pkg.model_verdict && pkg.model_verdict !== review.verdict
+  return (
+    <div className="rounded-lg border border-violet-300/20 bg-violet-400/[0.04] p-4">
+      <div className="flex flex-wrap items-center gap-2">
+        <span className="eyebrow flex items-center gap-1.5 text-violet-200/90">
+          <Bot size={12} /> AI review
+        </span>
+        <Badge tone={review.verdict} dot>{review.verdict}</Badge>
+        <span className="text-xs text-muted-foreground">{review.confidence} confidence</span>
+        {disagrees && (
+          <span className="text-xs text-amber-300/90">classifier said {pkg.model_verdict}</span>
+        )}
+        {review.model && <span className="ml-auto font-mono text-[11px] text-muted-foreground/70">{review.model}</span>}
+      </div>
+      <p className="mt-3 text-sm text-foreground/85 leading-relaxed">{review.reasoning}</p>
+      <p className="mt-2 text-sm text-foreground">
+        <span className="text-muted-foreground">Recommendation: </span>
+        {review.recommendation}
+      </p>
+    </div>
+  )
+}
+
+/** Packages the classifier flagged but the AI review judged benign. Shown, not hidden. */
+function ClearedPackages({ packages }) {
+  return (
+    <Card
+      title="Cleared by AI review"
+      subtitle="Flagged by the classifier, judged benign after reviewing the evidence"
+      right={<Badge tone="benign">{packages.length} cleared</Badge>}
+      bodyClassName="p-0"
+    >
+      <div className="divide-y divide-border">
+        {packages.map((pkg) => (
+          <div key={`${pkg.name}@${pkg.version}`} className="px-5 py-3">
+            <div className="flex flex-wrap items-center gap-2">
+              <span className="font-mono text-sm text-foreground">{pkg.name}@{pkg.version}</span>
+              <span className="text-xs text-muted-foreground">
+                classifier {pkg.model_verdict} ({(pkg.malice_score ?? 0).toFixed(3)}) → AI benign, {pkg.ai_review.confidence} confidence
+              </span>
+            </div>
+            <p className="mt-1 text-xs text-muted-foreground leading-relaxed">{pkg.ai_review.reasoning}</p>
+          </div>
+        ))}
       </div>
     </Card>
   )
