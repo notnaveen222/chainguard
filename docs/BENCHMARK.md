@@ -45,6 +45,42 @@ Our own grouped cross-validation reports F1 0.950. The gap to 0.885 is the
 expected cost of moving to independently collected data, and 0.885 is the number
 to quote externally.
 
+## Combined training (deployed model, 2026-09-17)
+
+Neither dataset alone generalises to the other: our corpus-trained model scores
+F1 0.885 on the benchmark, and a benchmark-trained model scores only 0.741 on
+our npm corpus. The deployed model is therefore trained on both (15,886 samples:
+7,444 malicious, 8,442 benign) with `scripts/train_combined.py` and
+`scripts/train_model.py --matrix data/corpus/features_combined.csv`.
+
+Grouped 5-fold cross-validation. Groups merge versions of a package **and**
+packages with identical feature vectors, because benchmark malware contains
+campaigns re-published under random names (6,546 malicious packages collapse
+to 2,741 groups):
+
+| Evaluation | Precision | Recall | F1 |
+|---|---|---|---|
+| Combined, overall | 0.980 | 0.939 | **0.959** |
+| Benchmark packages | 0.990 | 0.938 | **0.963** |
+| Our corpus | 0.967 | 0.899 | **0.931** |
+| Real applications, 660 held-out packages | | | 0 malicious flags, 9 suspicious |
+
+**How to quote this.** 0.963 is cross-validated with benchmark data in training,
+so it is not directly comparable to GuardDog's off-the-shelf 0.924. The
+comparable claim is the off-the-shelf table above (0.885). Running
+`benchmark_guo.py score` on the deployed model now reports ~0.98, which is a
+training-set score and must not be quoted.
+
+**What else was tested** (`scripts/experiment_benchmark_models.py`, benchmark-only
+grouped CV): SAP's features alone reach 0.972 and ours 0.966; combining them
+gives 0.976, and adding GuardDog's verdict 0.977. SAP features are not used in
+production (their extractor is file-based and the gain is about one point).
+
+**Known false positive.** `requests@2.19.0` in the demo project scores 0.481
+(suspicious): its `setup.py` calls `os.system(...)` for the maintainers' publish
+command and `utils.py` reads `.netrc`. The GPT review keeps it at
+suspicious/medium and asks for the `setup.py` line to be verified.
+
 ## Reproducing
 
 The repository contains everything needed to **score** models, without any malware:

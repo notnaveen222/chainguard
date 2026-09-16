@@ -318,6 +318,17 @@ def build_metadata(
         "unrelated detectors competing. The 'aggregate' row of the ablation study "
         "measures exactly how much that feature contributes.",
     ]
+    n_benchmark = sum(1 for sid in dataset.sample_ids if sid.startswith("guo2026:"))
+    if n_benchmark:
+        notes.append(
+            f"Training includes {n_benchmark} npm packages from the Guo et al. benchmark "
+            "(ASE 2026, doi:10.6084/m9.figshare.31869370, CC BY 4.0). Cross-validation "
+            "groups merge versions of a package and packages with identical feature "
+            "vectors, so campaign copies published under random names cannot sit on "
+            "both sides of a split. Off the shelf, before this data was added, the model "
+            "scored F1 0.885 on the benchmark (GuardDog 0.924, SAP XGBoost 0.883); see "
+            "docs/BENCHMARK.md."
+        )
     n_realworld = sum(1 for sid in dataset.sample_ids if sid.startswith("realworld:"))
     if n_realworld:
         notes.append(
