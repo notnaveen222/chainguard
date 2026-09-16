@@ -3,66 +3,117 @@
 @tailwind utilities;
 
 @layer base {
+  :root,
+  .dark {
+    --background: 240 6% 3.5%;
+    --foreground: 240 5% 96%;
+    --card: 240 5% 6%;
+    --card-foreground: 240 5% 96%;
+    --muted: 240 4% 11%;
+    --muted-foreground: 240 4% 58%;
+    --accent: 240 4% 13%;
+    --accent-foreground: 240 5% 96%;
+    --primary: 240 5% 96%;
+    --primary-foreground: 240 6% 8%;
+    --border: 240 4% 14%;
+    --input: 240 4% 16%;
+    --ring: 240 4% 40%;
+    --radius: 0.625rem;
+  }
+
   html {
     -webkit-font-smoothing: antialiased;
   }
 
   body {
-    @apply bg-ink-950 text-ink-200 font-sans;
+    @apply bg-background text-foreground font-sans;
+    font-feature-settings: 'cv11', 'ss01';
   }
 
-  /* Scrollbars styled to match the surface, so wide tables that scroll
-     internally do not look like a rendering fault. */
+  * {
+    @apply border-border;
+  }
+
+  ::selection {
+    @apply bg-cyan-500/30;
+  }
+
   ::-webkit-scrollbar {
     width: 10px;
     height: 10px;
   }
   ::-webkit-scrollbar-track {
-    @apply bg-ink-900;
+    background: transparent;
   }
   ::-webkit-scrollbar-thumb {
-    @apply bg-ink-700 rounded-full;
+    @apply bg-ink-800 rounded-full border-2 border-solid border-transparent bg-clip-padding;
   }
   ::-webkit-scrollbar-thumb:hover {
-    @apply bg-ink-600;
+    @apply bg-ink-700;
   }
 }
 
 @layer components {
   .card {
-    @apply bg-ink-900 border border-ink-800 rounded-xl;
+    @apply bg-card border border-border rounded-xl;
   }
 
   .btn {
-    @apply inline-flex items-center gap-2 px-4 py-2 rounded-lg font-medium
-           transition-colors disabled:opacity-40 disabled:cursor-not-allowed;
+    @apply inline-flex items-center justify-center gap-2 h-9 px-4 rounded-lg text-sm font-medium
+           transition-colors disabled:opacity-50 disabled:pointer-events-none
+           focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring;
   }
 
   .btn-primary {
-    @apply btn bg-cyan-600 hover:bg-cyan-500 text-white;
+    @apply btn bg-primary text-primary-foreground hover:bg-primary/90 shadow-sm;
   }
 
   .btn-ghost {
-    @apply btn bg-ink-800 hover:bg-ink-700 text-ink-200;
+    @apply btn bg-transparent hover:bg-accent text-muted-foreground hover:text-foreground;
   }
 
   .input {
-    @apply w-full bg-ink-950 border border-ink-700 rounded-lg px-3 py-2 text-sm
-           text-ink-100 placeholder-ink-500 focus:outline-none focus:ring-2
-           focus:ring-cyan-600/50 focus:border-cyan-600;
+    @apply w-full h-10 bg-background border border-input rounded-lg px-3 text-sm
+           text-foreground placeholder:text-muted-foreground/60 transition-colors
+           focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/50
+           focus-visible:border-ring;
+  }
+
+  textarea.input {
+    @apply h-auto py-2.5;
   }
 
   .badge {
-    @apply inline-flex items-center px-2 py-0.5 rounded text-xs font-semibold
-           uppercase tracking-wide;
+    @apply inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[11px] font-medium
+           uppercase tracking-wide whitespace-nowrap;
   }
 
   .table-header {
-    @apply text-left text-xs font-semibold uppercase tracking-wider
-           text-ink-400 px-4 py-3;
+    @apply text-left text-[11px] font-medium uppercase tracking-wider
+           text-muted-foreground px-4 py-2.5;
   }
 
   .table-cell {
     @apply px-4 py-3 text-sm align-top;
   }
+
+  .eyebrow {
+    @apply text-[11px] font-medium uppercase tracking-wider text-muted-foreground;
+  }
+}
+
+/* Assistant answers are rendered Markdown. */
+@layer components {
+  .assistant-md > * + * { @apply mt-2.5; }
+  .assistant-md h1, .assistant-md h2, .assistant-md h3 { @apply text-[13px] font-semibold text-foreground mt-4; }
+  .assistant-md ul { @apply list-disc pl-5 space-y-1; }
+  .assistant-md ol { @apply list-decimal pl-5 space-y-1; }
+  .assistant-md li::marker { @apply text-muted-foreground; }
+  .assistant-md strong { @apply font-semibold text-foreground; }
+  .assistant-md a { @apply text-cyan-300 underline underline-offset-2; }
+  .assistant-md code { @apply font-mono text-[12px] rounded bg-white/[0.07] px-1 py-0.5 text-cyan-100; }
+  .assistant-md pre { @apply rounded-lg border border-border bg-background p-3 overflow-x-auto; }
+  .assistant-md pre code { @apply bg-transparent p-0; }
+  .assistant-md table { @apply w-full text-xs border-collapse; }
+  .assistant-md th, .assistant-md td { @apply border border-border px-2 py-1 text-left; }
 }

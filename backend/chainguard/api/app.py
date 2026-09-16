@@ -18,13 +18,14 @@ from typing import Any, Optional
 
 from fastapi import FastAPI, HTTPException, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import HTMLResponse, JSONResponse
+from fastapi.responses import HTMLResponse, JSONResponse, StreamingResponse
 from pydantic import BaseModel, Field
 
 from chainguard import __version__
 from chainguard.analysis.signals import CATALOGUE
 from chainguard.api.jobs import registry, result_payload
 from chainguard.config import get_settings
+from chainguard.llm.assistant import assistant_available, install_log_buffer, run_chat
 from chainguard.logging_setup import get_logger, setup_logging
 from chainguard.models.db import delete_scan, init_db, list_scans, load_scan
 from chainguard.models.package import Ecosystem
@@ -37,6 +38,7 @@ MAX_MANIFEST_BYTES = 2 * 1024 * 1024
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     setup_logging()
+    install_log_buffer()
     settings = get_settings()
     settings.ensure_directories()
     init_db()
@@ -127,6 +129,7 @@ async def health() -> dict[str, Any]:
         "detector": "model" if classifier.is_trained else "rules-baseline",
         "model_trained": classifier.is_trained,
         "llm_enabled": settings.llm_available,
+        "assistant_available": assistant_available(),
         "thresholds": {
             "malicious": settings.malicious_threshold,
             "suspicious": settings.suspicious_threshold,
@@ -348,3 +351,126 @@ async def remove_scan(scan_id: str) -> dict[str, Any]:
     if not delete_scan(scan_id):
         raise HTTPException(404, f"No scan with id {scan_id}")
     return {"deleted": scan_id}
+
+
+# --------------------------------------------------------------------------- #
+# AI assistant
+# --------------------------------------------------------------------------- #
+
+
+class ChatTurn(BaseModel):
+    role: str
+    content: str
+
+
+class ChatRequest(BaseModel):
+    messages: list[ChatTurn] = Field(min_length=1, max_length=60)
+    scan_id: Optional[str] = None
+
+
+@app.post("/api/assistant/chat", tags=["assistant"])
+def assistant_chat(request: ChatRequest) -> StreamingResponse:
+    """Chat with the analysis assistant. Streams newline-delimited JSON events."""
+    if not assistant_available():
+        raise HTTPException(
+            503,
+            "The AI assistant needs an Anthropic API key. Add ANTHROPIC_API_KEY to the .env "
+            "file in the repository root and restart the API.",
+        )
+    history = [turn.model_dump() for turn in request.messages]
+    return StreamingResponse(
+        run_chat(history, scan_id=request.scan_id),
+        media_type="application/x-ndjson",
+        headers={"Cache-Control": "no-cache", "X-Accel-Buffering": "no"},
+    )
+
+
+# --------------------------------------------------------------------------- #
+# Known malware samples (quarantine vault)
+# --------------------------------------------------------------------------- #
+
+
+@app.get("/api/samples", tags=["samples"])
+def list_samples(query: str = "", limit: int = 40) -> dict[str, Any]:
+    """Real malicious packages stored (encrypted) in the local quarantine vault."""
+    from chainguard.dataset.vault import SampleVault
+
+    needle = query.strip().lower()
+    records = [r for r in SampleVault().records() if r.label == "malicious"]
+    matches = [r for r in records if not needle or needle in r.name.lower()]
+    return {
+        "total": len(records),
+        "samples": [
+            {"name": r.name, "version": r.version, "ecosystem": r.ecosystem, "source": r.source}
+            for r in matches[: min(max(limit, 1), 200)]
+        ],
+    }
+
+
+class SampleScanRequest(BaseModel):
+    name: str
+    ecosystem: Optional[str] = None
+
+
+@app.post("/api/samples/scan", tags=["samples"])
+def scan_sample(request: SampleScanRequest) -> dict[str, Any]:
+    """Statically analyse one vault sample and return it as a one-package scan.
+
+    The sample is decrypted into memory and parsed only — never executed. Vault
+    samples are part of the training corpus, so this demonstrates the evidence
+    and explanation pipeline on genuine malware; it is not a held-out accuracy
+    measurement (the model card reports those).
+    """
+    import time as _time
+
+    from chainguard.dataset.corpus import analyse_sample
+    from chainguard.dataset.vault import SampleVault
+    from chainguard.analysis.exposure import classify_exposure
+    from chainguard.llm.explain import explain_package
+    from chainguard.scanner import PackageFinding, ScanResult, _summarise, _to_exfiltration
+    from chainguard.models.db import save_scan
+
+    started = _time.time()
+    vault = SampleVault()
+    record = next(
+        (
+            r for r in vault.records()
+            if r.label == "malicious" and r.name.lower() == request.name.strip().lower()
+            and (not request.ecosystem or r.ecosystem.lower() == request.ecosystem.lower())
+        ),
+        None,
+    )
+    if record is None:
+        raise HTTPException(404, f"No malicious sample named '{request.name}' in the vault")
+    payload = vault.get(record.sample_id)
+    analysis = analyse_sample(record, payload) if payload is not None else None
+    if analysis is None:
+        raise HTTPException(422, f"Sample '{request.name}' could not be decoded or has no analysable files")
+
+    prediction = registry.classifier.predict(analysis.features, analysis.rules_score)
+    finding = PackageFinding(
+        name=record.name, version=record.version or "0.0.0", ecosystem=record.ecosystem,
+        is_direct=True, required_by=["sample"],
+        malice_score=round(prediction.probability, 4), verdict=prediction.verdict,
+        score_source=prediction.source, top_contributors=prediction.top_contributors,
+        typosquat_target=analysis.typosquat_target, files_analysed=analysis.files_analysed,
+        signals=analysis.top_signals(12),
+        exfiltration=[_to_exfiltration(classify_exposure(f, record.name, analyser=None))
+                      for f in analysis.confirmed_flows],
+    )
+    if finding.is_flagged:
+        explanation = explain_package(finding.name, finding.version, finding.ecosystem, finding.verdict,
+                                      finding.malice_score, finding.signals, finding.typosquat_target)
+        finding.explanation, finding.explanation_source = explanation.text, explanation.source
+
+    result = ScanResult(
+        scan_id=uuid.uuid4().hex[:12], target=f"sample:{record.name}", ecosystem=record.ecosystem,
+        started_at=started, packages=[finding],
+        model_source="model" if registry.classifier.is_trained else "rules-baseline",
+        warnings=[f"Known malware sample from {record.source}. It is part of the training corpus: "
+                  "this shows the evidence pipeline on real malware, not a held-out accuracy result."],
+    )
+    _summarise(result)
+    result.duration_seconds = round(_time.time() - started, 3)
+    save_scan(result)
+    return result_payload(result)

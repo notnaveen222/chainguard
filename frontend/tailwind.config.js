@@ -1,3 +1,5 @@
+import animate from 'tailwindcss-animate'
+
 /** @type {import('tailwindcss').Config} */
 export default {
   content: ['./index.html', './src/**/*.{js,jsx}'],
@@ -5,33 +7,49 @@ export default {
   theme: {
     extend: {
       colors: {
-        // Semantic names rather than raw colours, so severity styling stays
-        // consistent everywhere it appears.
+        // shadcn semantic tokens, backed by CSS variables in index.css.
+        border: 'hsl(var(--border))',
+        input: 'hsl(var(--input))',
+        ring: 'hsl(var(--ring))',
+        background: 'hsl(var(--background))',
+        foreground: 'hsl(var(--foreground))',
+        primary: { DEFAULT: 'hsl(var(--primary))', foreground: 'hsl(var(--primary-foreground))' },
+        muted: { DEFAULT: 'hsl(var(--muted))', foreground: 'hsl(var(--muted-foreground))' },
+        accent: { DEFAULT: 'hsl(var(--accent))', foreground: 'hsl(var(--accent-foreground))' },
+        card: { DEFAULT: 'hsl(var(--card))', foreground: 'hsl(var(--card-foreground))' },
+        // Semantic severity names, so severity styling stays consistent everywhere.
         critical: '#dc2626',
         high: '#ea580c',
         moderate: '#d97706',
         low: '#0891b2',
         safe: '#059669',
+        // Neutral scale (zinc-based "charcoal ink"). Kept under the old name so
+        // existing pages pick up the new palette without a rewrite.
         ink: {
-          50: '#f8fafc',
-          100: '#f1f5f9',
-          200: '#e2e8f0',
-          300: '#cbd5e1',
-          400: '#94a3b8',
-          500: '#64748b',
-          600: '#475569',
-          700: '#334155',
-          800: '#1e293b',
-          900: '#0f172a',
-          950: '#020617',
+          50: '#fafafa',
+          100: '#f4f4f5',
+          200: '#e4e4e7',
+          300: '#d4d4d8',
+          400: '#a1a1aa',
+          500: '#71717a',
+          600: '#52525b',
+          700: '#2e2e33',
+          800: '#1e1e22',
+          900: '#121214',
+          950: '#09090b',
         },
       },
+      borderRadius: {
+        lg: 'var(--radius)',
+        md: 'calc(var(--radius) - 2px)',
+        sm: 'calc(var(--radius) - 4px)',
+      },
       fontFamily: {
-        sans: ['Inter', 'system-ui', '-apple-system', 'Segoe UI', 'sans-serif'],
-        mono: ['ui-monospace', 'SFMono-Regular', 'Cascadia Code', 'Consolas', 'monospace'],
+        sans: ['"Inter Variable"', 'Inter', 'system-ui', 'sans-serif'],
+        mono: ['"JetBrains Mono Variable"', 'ui-monospace', 'Consolas', 'monospace'],
       },
       animation: {
-        'fade-in': 'fadeIn 0.25s ease-out',
+        'fade-in': 'fadeIn 0.3s ease-out',
       },
       keyframes: {
         fadeIn: {
@@ -41,5 +59,5 @@ export default {
       },
     },
   },
-  plugins: [],
+  plugins: [animate],
 }

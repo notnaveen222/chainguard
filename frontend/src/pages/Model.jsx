@@ -23,9 +23,9 @@ const GROUP_COLOURS = {
   obfuscation: '#d97706',
   process: '#ef4444',
   typosquat: '#0d9488',
-  metadata: '#64748b',
-  structure: '#94a3b8',
-  aggregate: '#334155',
+  metadata: '#71717a',
+  structure: '#a1a1aa',
+  aggregate: '#2e2e33',
 }
 
 /**
@@ -130,10 +130,10 @@ export default function ModelPage() {
         <ResponsiveContainer width="100%" height={Math.max(340, importances.length * 26)}>
           <BarChart data={importances} layout="vertical"
                     margin={{ left: 150, right: 24, top: 8, bottom: 8 }}>
-            <CartesianGrid strokeDasharray="3 3" stroke="#1e293b" horizontal={false} />
-            <XAxis type="number" stroke="#64748b" fontSize={11} />
-            <YAxis type="category" dataKey="name" stroke="#94a3b8" fontSize={11} width={145} />
-            <Tooltip contentStyle={TOOLTIP_STYLE} cursor={{ fill: '#1e293b55' }} />
+            <CartesianGrid strokeDasharray="3 3" stroke="#27272a" horizontal={false} />
+            <XAxis type="number" stroke="#71717a" fontSize={11} />
+            <YAxis type="category" dataKey="name" stroke="#a1a1aa" fontSize={11} width={145} />
+            <Tooltip contentStyle={TOOLTIP_STYLE} cursor={{ fill: '#27272a55' }} />
             <Bar dataKey="value" radius={[0, 3, 3, 0]}>
               {importances.map((entry) => (
                 <Cell key={entry.name} fill={colourFor(entry.name)} />
@@ -150,10 +150,10 @@ export default function ModelPage() {
           <ResponsiveContainer width="100%" height={Math.max(300, ablation.length * 34)}>
             <BarChart data={ablation} layout="vertical"
                       margin={{ left: 130, right: 24, top: 8, bottom: 8 }}>
-              <CartesianGrid strokeDasharray="3 3" stroke="#1e293b" horizontal={false} />
-              <XAxis type="number" stroke="#64748b" fontSize={11} />
-              <YAxis type="category" dataKey="group" stroke="#94a3b8" fontSize={11} width={125} />
-              <Tooltip contentStyle={TOOLTIP_STYLE} cursor={{ fill: '#1e293b55' }} />
+              <CartesianGrid strokeDasharray="3 3" stroke="#27272a" horizontal={false} />
+              <XAxis type="number" stroke="#71717a" fontSize={11} />
+              <YAxis type="category" dataKey="group" stroke="#a1a1aa" fontSize={11} width={125} />
+              <Tooltip contentStyle={TOOLTIP_STYLE} cursor={{ fill: '#27272a55' }} />
               <Bar dataKey="drop" radius={[0, 3, 3, 0]}>
                 {ablation.map((entry) => (
                   <Cell key={entry.group} fill={GROUP_COLOURS[entry.group] || '#475569'} />
@@ -189,8 +189,8 @@ export default function ModelPage() {
 }
 
 const TOOLTIP_STYLE = {
-  background: '#0f172a',
-  border: '1px solid #334155',
+  background: '#121214',
+  border: '1px solid #2e2e33',
   borderRadius: 8,
   fontSize: 12,
   color: '#e2e8f0',

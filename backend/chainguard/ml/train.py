@@ -318,6 +318,16 @@ def build_metadata(
         "unrelated detectors competing. The 'aggregate' row of the ablation study "
         "measures exactly how much that feature contributes.",
     ]
+    n_realworld = sum(1 for sid in dataset.sample_ids if sid.startswith("realworld:"))
+    if n_realworld:
+        notes.append(
+            f"The benign class is augmented with {n_realworld} packages from the "
+            "dependency trees of real applications (scripts/augment_benign.py). The "
+            "original benign sample was mostly large, popular packages, which taught "
+            "the model that small packages are suspicious; real dependency trees are "
+            "mostly small packages. False positives are measured on held-out "
+            "applications whose package names never appear in training."
+        )
 
     return ModelMetadata(
         schema_version=SCHEMA_VERSION,

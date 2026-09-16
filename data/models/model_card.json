@@ -61,502 +61,502 @@
     "rules_baseline_score"
   ],
   "algorithm": "gradient_boosting",
-  "trained_at": "2026-09-16T12:33:29.629766+00:00",
-  "n_samples": 1797,
+  "trained_at": "2026-09-16T17:16:17.509377+00:00",
+  "n_samples": 2450,
   "n_malicious": 898,
-  "n_benign": 899,
+  "n_benign": 1552,
   "metrics": {
-    "accuracy": 0.9482,
-    "precision": 0.96,
-    "recall": 0.9354,
-    "f1": 0.9475,
-    "roc_auc": 0.9793,
-    "pr_auc": 0.9851,
+    "accuracy": 0.9637,
+    "precision": 0.9655,
+    "recall": 0.9343,
+    "f1": 0.9496,
+    "roc_auc": 0.9855,
+    "pr_auc": 0.9831,
     "confusion_matrix": {
-      "true_negative": 864,
-      "false_positive": 35,
-      "false_negative": 58,
-      "true_positive": 840
+      "true_negative": 1522,
+      "false_positive": 30,
+      "false_negative": 59,
+      "true_positive": 839
     },
     "threshold": 0.5,
     "support": {
-      "benign": 899,
+      "benign": 1552,
       "malicious": 898
     },
     "n_splits": 5,
     "per_fold": [
       {
-        "accuracy": 0.9417,
-        "precision": 0.9435,
-        "recall": 0.9382,
-        "f1": 0.9408,
-        "roc_auc": 0.9813,
-        "pr_auc": 0.986,
+        "accuracy": 0.9612,
+        "precision": 0.9834,
+        "recall": 0.9175,
+        "f1": 0.9493,
+        "roc_auc": 0.9816,
+        "pr_auc": 0.9825,
         "confusion_matrix": {
-          "true_negative": 172,
-          "false_positive": 10,
-          "false_negative": 11,
-          "true_positive": 167
+          "true_negative": 293,
+          "false_positive": 3,
+          "false_negative": 16,
+          "true_positive": 178
         },
         "threshold": 0.5,
         "support": {
-          "benign": 182,
-          "malicious": 178
+          "benign": 296,
+          "malicious": 194
         }
       },
       {
-        "accuracy": 0.9582,
-        "precision": 0.9595,
-        "recall": 0.954,
-        "f1": 0.9568,
-        "roc_auc": 0.9832,
-        "pr_auc": 0.9878,
+        "accuracy": 0.9714,
+        "precision": 0.96,
+        "recall": 0.96,
+        "f1": 0.96,
+        "roc_auc": 0.9869,
+        "pr_auc": 0.9856,
         "confusion_matrix": {
-          "true_negative": 178,
+          "true_negative": 308,
           "false_positive": 7,
-          "false_negative": 8,
+          "false_negative": 7,
+          "true_positive": 168
+        },
+        "threshold": 0.5,
+        "support": {
+          "benign": 315,
+          "malicious": 175
+        }
+      },
+      {
+        "accuracy": 0.9551,
+        "precision": 0.9708,
+        "recall": 0.9071,
+        "f1": 0.9379,
+        "roc_auc": 0.9842,
+        "pr_auc": 0.9799,
+        "confusion_matrix": {
+          "true_negative": 302,
+          "false_positive": 5,
+          "false_negative": 17,
           "true_positive": 166
         },
         "threshold": 0.5,
         "support": {
-          "benign": 185,
-          "malicious": 174
+          "benign": 307,
+          "malicious": 183
         }
       },
       {
-        "accuracy": 0.9471,
-        "precision": 0.9774,
-        "recall": 0.9202,
-        "f1": 0.9479,
-        "roc_auc": 0.9761,
-        "pr_auc": 0.9834,
+        "accuracy": 0.9612,
+        "precision": 0.96,
+        "recall": 0.9333,
+        "f1": 0.9465,
+        "roc_auc": 0.9856,
+        "pr_auc": 0.9818,
         "confusion_matrix": {
-          "true_negative": 167,
-          "false_positive": 4,
-          "false_negative": 15,
-          "true_positive": 173
-        },
-        "threshold": 0.5,
-        "support": {
-          "benign": 171,
-          "malicious": 188
-        }
-      },
-      {
-        "accuracy": 0.9528,
-        "precision": 0.9583,
-        "recall": 0.9415,
-        "f1": 0.9499,
-        "roc_auc": 0.9855,
-        "pr_auc": 0.9885,
-        "confusion_matrix": {
-          "true_negative": 182,
+          "true_negative": 303,
           "false_positive": 7,
-          "false_negative": 10,
-          "true_positive": 161
+          "false_negative": 12,
+          "true_positive": 168
         },
         "threshold": 0.5,
         "support": {
-          "benign": 189,
-          "malicious": 171
+          "benign": 310,
+          "malicious": 180
         }
       },
       {
-        "accuracy": 0.9415,
-        "precision": 0.9611,
-        "recall": 0.9251,
-        "f1": 0.9428,
-        "roc_auc": 0.9736,
-        "pr_auc": 0.9826,
+        "accuracy": 0.9694,
+        "precision": 0.9521,
+        "recall": 0.9578,
+        "f1": 0.955,
+        "roc_auc": 0.9915,
+        "pr_auc": 0.9888,
         "confusion_matrix": {
-          "true_negative": 165,
-          "false_positive": 7,
-          "false_negative": 14,
-          "true_positive": 173
+          "true_negative": 316,
+          "false_positive": 8,
+          "false_negative": 7,
+          "true_positive": 159
         },
         "threshold": 0.5,
         "support": {
-          "benign": 172,
-          "malicious": 187
+          "benign": 324,
+          "malicious": 166
         }
       }
     ],
     "fold_std": {
       "precision": 0.0108,
-      "recall": 0.0121,
-      "f1": 0.0056
+      "recall": 0.0211,
+      "f1": 0.0075
     }
   },
   "cv_metrics": {
-    "accuracy": 0.9482,
-    "precision": 0.96,
-    "recall": 0.9354,
-    "f1": 0.9475,
-    "roc_auc": 0.9793,
-    "pr_auc": 0.9851,
+    "accuracy": 0.9637,
+    "precision": 0.9655,
+    "recall": 0.9343,
+    "f1": 0.9496,
+    "roc_auc": 0.9855,
+    "pr_auc": 0.9831,
     "confusion_matrix": {
-      "true_negative": 864,
-      "false_positive": 35,
-      "false_negative": 58,
-      "true_positive": 840
+      "true_negative": 1522,
+      "false_positive": 30,
+      "false_negative": 59,
+      "true_positive": 839
     },
     "threshold": 0.5,
     "support": {
-      "benign": 899,
+      "benign": 1552,
       "malicious": 898
     },
     "n_splits": 5,
     "per_fold": [
       {
-        "accuracy": 0.9417,
-        "precision": 0.9435,
-        "recall": 0.9382,
-        "f1": 0.9408,
-        "roc_auc": 0.9813,
-        "pr_auc": 0.986,
+        "accuracy": 0.9612,
+        "precision": 0.9834,
+        "recall": 0.9175,
+        "f1": 0.9493,
+        "roc_auc": 0.9816,
+        "pr_auc": 0.9825,
         "confusion_matrix": {
-          "true_negative": 172,
-          "false_positive": 10,
-          "false_negative": 11,
-          "true_positive": 167
+          "true_negative": 293,
+          "false_positive": 3,
+          "false_negative": 16,
+          "true_positive": 178
         },
         "threshold": 0.5,
         "support": {
-          "benign": 182,
-          "malicious": 178
+          "benign": 296,
+          "malicious": 194
         }
       },
       {
-        "accuracy": 0.9582,
-        "precision": 0.9595,
-        "recall": 0.954,
-        "f1": 0.9568,
-        "roc_auc": 0.9832,
-        "pr_auc": 0.9878,
+        "accuracy": 0.9714,
+        "precision": 0.96,
+        "recall": 0.96,
+        "f1": 0.96,
+        "roc_auc": 0.9869,
+        "pr_auc": 0.9856,
         "confusion_matrix": {
-          "true_negative": 178,
+          "true_negative": 308,
           "false_positive": 7,
-          "false_negative": 8,
+          "false_negative": 7,
+          "true_positive": 168
+        },
+        "threshold": 0.5,
+        "support": {
+          "benign": 315,
+          "malicious": 175
+        }
+      },
+      {
+        "accuracy": 0.9551,
+        "precision": 0.9708,
+        "recall": 0.9071,
+        "f1": 0.9379,
+        "roc_auc": 0.9842,
+        "pr_auc": 0.9799,
+        "confusion_matrix": {
+          "true_negative": 302,
+          "false_positive": 5,
+          "false_negative": 17,
           "true_positive": 166
         },
         "threshold": 0.5,
         "support": {
-          "benign": 185,
-          "malicious": 174
+          "benign": 307,
+          "malicious": 183
         }
       },
       {
-        "accuracy": 0.9471,
-        "precision": 0.9774,
-        "recall": 0.9202,
-        "f1": 0.9479,
-        "roc_auc": 0.9761,
-        "pr_auc": 0.9834,
+        "accuracy": 0.9612,
+        "precision": 0.96,
+        "recall": 0.9333,
+        "f1": 0.9465,
+        "roc_auc": 0.9856,
+        "pr_auc": 0.9818,
         "confusion_matrix": {
-          "true_negative": 167,
-          "false_positive": 4,
-          "false_negative": 15,
-          "true_positive": 173
-        },
-        "threshold": 0.5,
-        "support": {
-          "benign": 171,
-          "malicious": 188
-        }
-      },
-      {
-        "accuracy": 0.9528,
-        "precision": 0.9583,
-        "recall": 0.9415,
-        "f1": 0.9499,
-        "roc_auc": 0.9855,
-        "pr_auc": 0.9885,
-        "confusion_matrix": {
-          "true_negative": 182,
+          "true_negative": 303,
           "false_positive": 7,
-          "false_negative": 10,
-          "true_positive": 161
+          "false_negative": 12,
+          "true_positive": 168
         },
         "threshold": 0.5,
         "support": {
-          "benign": 189,
-          "malicious": 171
+          "benign": 310,
+          "malicious": 180
         }
       },
       {
-        "accuracy": 0.9415,
-        "precision": 0.9611,
-        "recall": 0.9251,
-        "f1": 0.9428,
-        "roc_auc": 0.9736,
-        "pr_auc": 0.9826,
+        "accuracy": 0.9694,
+        "precision": 0.9521,
+        "recall": 0.9578,
+        "f1": 0.955,
+        "roc_auc": 0.9915,
+        "pr_auc": 0.9888,
         "confusion_matrix": {
-          "true_negative": 165,
-          "false_positive": 7,
-          "false_negative": 14,
-          "true_positive": 173
+          "true_negative": 316,
+          "false_positive": 8,
+          "false_negative": 7,
+          "true_positive": 159
         },
         "threshold": 0.5,
         "support": {
-          "benign": 172,
-          "malicious": 187
+          "benign": 324,
+          "malicious": 166
         }
       }
     ],
     "fold_std": {
       "precision": 0.0108,
-      "recall": 0.0121,
-      "f1": 0.0056
+      "recall": 0.0211,
+      "f1": 0.0075
     }
   },
   "baseline_metrics": {
-    "accuracy": 0.6472,
-    "precision": 0.7349,
+    "accuracy": 0.7318,
+    "precision": 0.706,
     "recall": 0.4599,
-    "f1": 0.5658,
-    "roc_auc": 0.7761,
-    "pr_auc": 0.7182,
+    "f1": 0.557,
+    "roc_auc": 0.8321,
+    "pr_auc": 0.6791,
     "confusion_matrix": {
-      "true_negative": 750,
-      "false_positive": 149,
+      "true_negative": 1380,
+      "false_positive": 172,
       "false_negative": 485,
       "true_positive": 413
     },
     "threshold": 0.5,
     "support": {
-      "benign": 899,
+      "benign": 1552,
       "malicious": 898
     },
     "note": "Weighted-sum rules engine with no learning; see analysis/signals.py"
   },
   "ablation": {
     "install_execution": {
-      "f1": 0.9476,
-      "pr_auc": 0.9855,
-      "recall": 0.9365,
-      "precision": 0.959
+      "f1": 0.9486,
+      "pr_auc": 0.9827,
+      "recall": 0.9354,
+      "precision": 0.9622
     },
     "dynamic_execution": {
-      "f1": 0.9532,
-      "pr_auc": 0.9838,
-      "recall": 0.9421,
-      "precision": 0.9647
-    },
-    "process": {
-      "f1": 0.9497,
-      "pr_auc": 0.9843,
-      "recall": 0.9354,
-      "precision": 0.9644
-    },
-    "network": {
-      "f1": 0.9514,
-      "pr_auc": 0.9852,
-      "recall": 0.9376,
-      "precision": 0.9656
-    },
-    "credentials": {
-      "f1": 0.9487,
-      "pr_auc": 0.9853,
-      "recall": 0.9376,
-      "precision": 0.9601
-    },
-    "obfuscation": {
-      "f1": 0.9481,
-      "pr_auc": 0.9858,
-      "recall": 0.9354,
-      "precision": 0.9611
-    },
-    "exfiltration": {
-      "f1": 0.9504,
-      "pr_auc": 0.9844,
-      "recall": 0.9388,
-      "precision": 0.9623
-    },
-    "metadata": {
-      "f1": 0.9447,
-      "pr_auc": 0.983,
-      "recall": 0.9321,
-      "precision": 0.9577
-    },
-    "structure": {
-      "f1": 0.9422,
-      "pr_auc": 0.9831,
-      "recall": 0.9343,
-      "precision": 0.9502
-    },
-    "typosquat": {
       "f1": 0.9492,
-      "pr_auc": 0.9853,
+      "pr_auc": 0.9828,
       "recall": 0.9354,
       "precision": 0.9633
     },
-    "aggregate": {
-      "f1": 0.9455,
-      "pr_auc": 0.9843,
+    "process": {
+      "f1": 0.9497,
+      "pr_auc": 0.9833,
       "recall": 0.9365,
-      "precision": 0.9546
+      "precision": 0.9633
+    },
+    "network": {
+      "f1": 0.9496,
+      "pr_auc": 0.9834,
+      "recall": 0.9343,
+      "precision": 0.9655
+    },
+    "credentials": {
+      "f1": 0.9507,
+      "pr_auc": 0.9832,
+      "recall": 0.9343,
+      "precision": 0.9677
+    },
+    "obfuscation": {
+      "f1": 0.9496,
+      "pr_auc": 0.9832,
+      "recall": 0.9343,
+      "precision": 0.9655
+    },
+    "exfiltration": {
+      "f1": 0.9491,
+      "pr_auc": 0.9831,
+      "recall": 0.9343,
+      "precision": 0.9644
+    },
+    "metadata": {
+      "f1": 0.9443,
+      "pr_auc": 0.9765,
+      "recall": 0.9254,
+      "precision": 0.964
+    },
+    "structure": {
+      "f1": 0.9445,
+      "pr_auc": 0.9821,
+      "recall": 0.9376,
+      "precision": 0.9514
+    },
+    "typosquat": {
+      "f1": 0.9518,
+      "pr_auc": 0.9832,
+      "recall": 0.9354,
+      "precision": 0.9689
+    },
+    "aggregate": {
+      "f1": 0.9454,
+      "pr_auc": 0.9823,
+      "recall": 0.9343,
+      "precision": 0.9567
     }
   },
   "feature_importances": [
     [
       "has_repository",
-      0.455901
+      0.605944
     ],
     [
       "file_count",
-      0.241417
+      0.166169
     ],
     [
       "rules_baseline_score",
-      0.044533
+      0.027
     ],
     [
       "total_bytes",
-      0.039188
+      0.023869
     ],
     [
       "avg_file_bytes",
-      0.029149
+      0.023376
     ],
     [
       "distinct_signal_types",
-      0.025539
-    ],
-    [
-      "dependency_count",
-      0.017178
-    ],
-    [
-      "description_length",
-      0.015057
-    ],
-    [
-      "tiny_package_with_hook",
-      0.014162
-    ],
-    [
-      "decode_then_exec",
-      0.014022
-    ],
-    [
-      "parse_failure_ratio",
-      0.013015
+      0.022295
     ],
     [
       "medium_signals",
-      0.012806
+      0.011372
     ],
     [
-      "max_line_length",
-      0.011532
+      "tiny_package_with_hook",
+      0.010486
     ],
     [
-      "total_signals",
-      0.009479
+      "parse_failure_ratio",
+      0.010365
+    ],
+    [
+      "dependency_count",
+      0.010175
+    ],
+    [
+      "decode_then_exec",
+      0.009761
     ],
     [
       "process_spawn",
-      0.008527
+      0.008724
     ],
     [
-      "source_file_ratio",
-      0.006641
+      "version_count",
+      0.007827
     ],
     [
-      "dynamic_eval",
-      0.005496
+      "description_length",
+      0.00663
     ],
     [
       "source_file_count",
-      0.004038
+      0.005709
     ],
     [
-      "typosquat_proximity",
-      0.003535
+      "dynamic_eval",
+      0.005232
     ],
     [
-      "env_bulk_harvest",
-      0.002683
+      "max_line_length",
+      0.005083
     ],
     [
-      "hex_escape_heavy",
-      0.002551
+      "source_file_ratio",
+      0.004674
     ],
     [
-      "network_access",
-      0.002116
+      "age_days",
+      0.003842
     ],
     [
-      "file_write_sensitive",
-      0.002054
+      "total_signals",
+      0.002822
     ],
     [
-      "install_hook_network",
-      0.001853
-    ],
-    [
-      "shell_execution",
-      0.001774
-    ],
-    [
-      "install_hook_present",
-      0.001705
+      "suspicious_endpoint",
+      0.002777
     ],
     [
       "minified_ratio",
-      0.001616
+      0.002404
+    ],
+    [
+      "shell_execution",
+      0.002182
+    ],
+    [
+      "env_bulk_harvest",
+      0.001937
     ],
     [
       "high_signals",
-      0.00158
+      0.001859
     ],
     [
-      "host_recon",
-      0.001438
+      "critical_signals",
+      0.001818
     ],
     [
-      "hardcoded_ip",
-      0.001408
+      "maintainer_count",
+      0.001756
     ],
     [
-      "env_access",
+      "install_hook_present",
+      0.001484
+    ],
+    [
+      "typosquat_proximity",
       0.00138
     ],
     [
       "dns_exfil",
-      0.001221
+      0.001256
     ],
     [
-      "install_hook_count",
-      0.001024
+      "host_recon",
+      0.00119
     ],
     [
-      "string_array_decoder",
-      0.000987
+      "install_hook_network",
+      0.001138
     ],
     [
-      "suspicious_endpoint",
-      0.000916
+      "hex_escape_heavy",
+      0.001085
+    ],
+    [
+      "file_write_sensitive",
+      0.000914
+    ],
+    [
+      "env_access",
+      0.000848
     ],
     [
       "setup_py_side_effects",
-      0.000839
+      0.000701
     ],
     [
-      "dynamic_import",
-      0.000482
+      "network_access",
+      0.000633
     ],
     [
-      "exfil_env_to_network",
-      0.000309
-    ],
-    [
-      "critical_signals",
-      0.000254
+      "hardcoded_ip",
+      0.000624
     ],
     [
       "base64_blob",
-      0.000199
+      0.000589
+    ],
+    [
+      "dynamic_import",
+      0.000512
     ]
   ],
   "notes": [
@@ -566,6 +566,7 @@
     "Malicious samples: DataDog/malicious-software-packages-dataset (Apache-2.0). Benign samples: real packages from the live npm and PyPI registries.",
     "PR-AUC leads over accuracy: in deployment the class balance is extreme, and a model predicting 'benign' always would score high accuracy while detecting nothing.",
     "Structural features (file_count, total_bytes, source_file_count) rank highly because malicious samples are overwhelmingly small single-purpose droppers while popular benign packages are large libraries. This is a real signal, but it is partly a property of the corpus: a large malicious package, or a tiny legitimate utility, sits where the model has little evidence. The behavioural features are what should generalise, and the ablation study measures how much work each family is doing.",
-    "The rules-baseline score is itself one of the features, so the model is a stacked learner over the rules engine rather than an independent alternative to it. The 'model vs. baseline' comparison should therefore be read as 'what the learned layer adds on top of the rules', not as two unrelated detectors competing. The 'aggregate' row of the ablation study measures exactly how much that feature contributes."
+    "The rules-baseline score is itself one of the features, so the model is a stacked learner over the rules engine rather than an independent alternative to it. The 'model vs. baseline' comparison should therefore be read as 'what the learned layer adds on top of the rules', not as two unrelated detectors competing. The 'aggregate' row of the ablation study measures exactly how much that feature contributes.",
+    "The benign class is augmented with 653 packages from the dependency trees of real applications (scripts/augment_benign.py). The original benign sample was mostly large, popular packages, which taught the model that small packages are suspicious; real dependency trees are mostly small packages. False positives are measured on held-out applications whose package names never appear in training."
   ]
 }

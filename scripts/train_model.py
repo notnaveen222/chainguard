@@ -46,10 +46,13 @@ def main() -> int:
     parser.add_argument("--folds", type=int, default=5)
     parser.add_argument("--skip-ablation", action="store_true",
                         help="skip the per-family ablation study (it retrains once per family)")
+    parser.add_argument("--matrix", type=Path, default=None,
+                        help="feature matrix to train on (default: data/corpus/features.csv; "
+                             "scripts/augment_benign.py writes features_augmented.csv)")
     args = parser.parse_args()
 
     settings = get_settings()
-    matrix_path = settings.corpus_dir / "features.csv"
+    matrix_path = args.matrix or settings.corpus_dir / "features.csv"
     if not matrix_path.exists():
         logger.error("No feature matrix at %s. Run scripts/build_dataset.py first.", matrix_path)
         return 1
