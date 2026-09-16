@@ -147,7 +147,7 @@ class TestExplanations:
         assert explanation.source == "local"
 
     def test_falls_back_to_local_when_llm_disabled(self):
-        assert get_settings().llm_available is False, "LLM must be off by default"
+        assert get_settings().llm_available is False, "AI layer must be off in tests"
         explanation = explain_package(
             "x", "1.0", "PyPI", "malicious", 0.9,
             [make_signal("DYNAMIC_EVAL", file="a.py")],
