@@ -13,7 +13,7 @@ evaluated tool's per-package verdict.
 ## Results (2026-09-16, deployed model)
 
 13,436 packages analysed: 6,546 malicious, 6,890 benign. 133 benign versions are
-no longer on npm and 28 malware entries had no tarball in the archive.
+no longer on npm; 28 malware entries could not be analysed (27 have no tarball in the archive, 1 failed to parse).
 Threshold 0.60, the same as production.
 
 | Detector | Type | Precision | Recall | F1 |
