@@ -1,3 +1,5 @@
+> **Superseded.** The current handoff is [docs/HANDOFF.md](docs/HANDOFF.md) (2026-09-17). This file describes the 2026-09-16 state.
+
 # Session handoff — ChainGuard, pre-review work
 
 **Written:** 2026-09-16, during a single long Claude Code session, to allow
