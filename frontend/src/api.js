@@ -62,6 +62,18 @@ export const api = {
   history: (limit = 25) => request(`/api/scans?limit=${limit}`),
   remove: (scanId) => request(`/api/scans/${scanId}`, { method: 'DELETE' }),
 
+  diffVersions: (name, oldVersion, newVersion, ecosystem) =>
+    request('/api/diff/versions', {
+      method: 'POST',
+      body: JSON.stringify({ name, old_version: oldVersion, new_version: newVersion, ecosystem }),
+    }),
+
+  compareReview: (scanId, pkg, version) =>
+    request('/api/compare/review', {
+      method: 'POST',
+      body: JSON.stringify({ scan_id: scanId, package: pkg, version }),
+    }),
+
   samples: (query = '', limit = 40) =>
     request(`/api/samples?query=${encodeURIComponent(query)}&limit=${limit}`),
   scanSample: (name, ecosystem) =>

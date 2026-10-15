@@ -17,6 +17,7 @@ import {
   ShieldAlert,
   Sparkles,
   Wrench,
+  Zap,
 } from 'lucide-react'
 
 import { api, pollScan } from '../api'
@@ -475,7 +476,7 @@ function ScanResult({ result, onAskAI }) {
 
       <ReachabilityHeadline summary={summary} />
 
-      {flagged.length > 0 && <FlaggedPackages packages={flagged} />}
+      {flagged.length > 0 && <FlaggedPackages packages={flagged} scanId={result.scan_id} />}
       {cleared.length > 0 && <ClearedPackages packages={cleared} />}
       <UnanalysedPackages packages={result.packages || []} />
       <VulnerabilityTable vulnerabilities={result.packages?.flatMap((p) => p.vulnerabilities || []) || []} />
@@ -510,7 +511,7 @@ function ScoreMeter({ score }) {
   )
 }
 
-function FlaggedPackages({ packages }) {
+function FlaggedPackages({ packages, scanId }) {
   const [expanded, setExpanded] = useState(packages.length === 1 ? `${packages[0].name}@${packages[0].version}` : null)
 
   return (
@@ -533,6 +534,11 @@ function FlaggedPackages({ packages }) {
                 <ChevronRight size={15} className={cn('text-muted-foreground transition-transform', open && 'rotate-90')} />
                 <span className="font-mono text-sm text-foreground">{key}</span>
                 <Badge tone={pkg.verdict} dot>{pkg.verdict}</Badge>
+                {pkg.jev_review && (
+                  <span className="inline-flex items-center gap-1 text-[11px] text-sky-200/80">
+                    <Zap size={12} /> Jev
+                  </span>
+                )}
                 {pkg.ai_review && (
                   <span className="inline-flex items-center gap-1 text-[11px] text-violet-200/80">
                     <Bot size={12} /> AI reviewed
@@ -546,7 +552,7 @@ function FlaggedPackages({ packages }) {
 
               {open && (
                 <div className="px-5 pb-5 pt-1 space-y-5 animate-fade-in">
-                  {pkg.ai_review && <AIReviewCard pkg={pkg} />}
+                  <ModelComparison pkg={pkg} scanId={scanId} />
 
                   {pkg.explanation && !pkg.ai_review && (
                     <div className="rounded-lg border border-border bg-white/[0.02] p-4">
@@ -554,7 +560,7 @@ function FlaggedPackages({ packages }) {
                         Assessment
                         {pkg.explanation_source === 'llm' && (
                           <span className="ml-2 normal-case tracking-normal text-muted-foreground/60">
-                            (written by GPT)
+                            (written by {llmLabel(pkg.ai_review?.model)})
                           </span>
                         )}
                       </p>
@@ -621,7 +627,7 @@ function FlaggedPackages({ packages }) {
   )
 }
 
-/** GPT's second-stage verdict for a flagged package, next to the classifier's. */
+/** The LLM's second-stage verdict for a flagged package, next to the classifier's. */
 function AIReviewCard({ pkg }) {
   const review = pkg.ai_review
   const disagrees = pkg.model_verdict && pkg.model_verdict !== review.verdict
@@ -643,6 +649,136 @@ function AIReviewCard({ pkg }) {
         <span className="text-muted-foreground">Recommendation: </span>
         {review.recommendation}
       </p>
+    </div>
+  )
+}
+
+/** Display name of the LLM provider, from the model id it reported. */
+const llmLabel = (model) => (/^gemini/i.test(model || '') ? 'Gemini' : /^gpt|^o\d/i.test(model || '') ? 'GPT' : 'LLM')
+
+const pct = (v) => `${Math.round((v ?? 0) * 100)}%`
+
+/** Jev's typed verdict: a probability distribution, no prose. */
+function JevReviewCard({ review, classifierVerdict }) {
+  const disagrees = classifierVerdict && classifierVerdict !== review.verdict
+  const order = ['malicious', 'suspicious', 'benign']
+  return (
+    <div className="rounded-lg border border-sky-300/20 bg-sky-400/[0.04] p-4">
+      <div className="flex flex-wrap items-center gap-2">
+        <span className="eyebrow flex items-center gap-1.5 text-sky-200/90">
+          <Zap size={12} /> Jev
+        </span>
+        <Badge tone={review.verdict} dot>{review.verdict}</Badge>
+        <span className="text-xs text-muted-foreground">{pct(review.confidence)} confidence</span>
+        {disagrees && <span className="text-xs text-amber-300/90">classifier said {classifierVerdict}</span>}
+        {review.latency_ms != null && (
+          <span className="ml-auto font-mono text-[11px] text-sky-200/80">{review.latency_ms} ms</span>
+        )}
+      </div>
+      <div className="mt-3 space-y-1.5">
+        {order.map((label) => (
+          <div key={label} className="flex items-center gap-2 text-xs">
+            <span className="w-20 text-muted-foreground">{label}</span>
+            <div className="h-1.5 flex-1 rounded-full bg-white/[0.06] overflow-hidden">
+              <div className="h-full bg-sky-300/70" style={{ width: pct(review.probabilities?.[label]) }} />
+            </div>
+            <span className="w-10 text-right font-mono text-muted-foreground">{pct(review.probabilities?.[label])}</span>
+          </div>
+        ))}
+      </div>
+      <dl className="mt-3 grid grid-cols-3 gap-2 text-xs">
+        {[
+          ['Exfiltration', review.exfiltration],
+          ['Hidden payload', review.payload_execution],
+          ['Normal behaviour', review.normal_behaviour],
+        ].map(([label, value]) => (
+          <div key={label} className="rounded-md bg-white/[0.03] px-2 py-1.5">
+            <dt className="text-muted-foreground">{label}</dt>
+            <dd className="font-mono text-foreground">{pct(value)}</dd>
+          </div>
+        ))}
+      </dl>
+      <p className="mt-3 text-[11px] text-muted-foreground/70">
+        Typed answer only: Jev returns probabilities, not an explanation.
+        {review.model && <span className="ml-1 font-mono">{review.model}</span>}
+      </p>
+    </div>
+  )
+}
+
+/**
+ * The LLM (Gemini or OpenAI) and Jev side by side for one flagged package. Stored reviews come from the
+ * scan; "Run live comparison" re-runs both on the same evidence and times them.
+ */
+function ModelComparison({ pkg, scanId }) {
+  const [live, setLive] = useState(null)
+  const [busy, setBusy] = useState(false)
+  const [error, setError] = useState(null)
+
+  const gpt = live ? live.llm : pkg.ai_review
+  const label = live?.llm_provider || llmLabel(gpt?.model)
+  const jev = live ? live.jev : pkg.jev_review
+  const classifierVerdict = pkg.model_verdict || pkg.verdict
+
+  const run = async () => {
+    setBusy(true)
+    setError(null)
+    try {
+      setLive(await api.compareReview(scanId, pkg.name, pkg.version))
+    } catch (e) {
+      setError(e.message)
+    } finally {
+      setBusy(false)
+    }
+  }
+
+  const faster =
+    gpt?.latency_ms && jev?.latency_ms ? (gpt.latency_ms / jev.latency_ms).toFixed(1) : null
+
+  return (
+    <div className="space-y-3">
+      <div className="flex flex-wrap items-center gap-3">
+        <span className="eyebrow">{label} vs Jev</span>
+        {faster && (
+          <span className="text-xs text-foreground/80">
+            Jev answered in {jev.latency_ms} ms, {label} in {gpt.latency_ms} ms ({faster}x)
+          </span>
+        )}
+        {live && <span className="text-[11px] text-muted-foreground">live run · both in parallel</span>}
+        <button
+          onClick={run}
+          disabled={busy}
+          className="ml-auto inline-flex items-center gap-1.5 rounded-md border border-border px-2.5 py-1 text-xs hover:bg-white/[0.04] disabled:opacity-50"
+        >
+          {busy ? <Loader2 size={12} className="animate-spin" /> : <Play size={12} />}
+          Run live comparison
+        </button>
+      </div>
+      {error && <p className="text-xs text-red-300">{error}</p>}
+      {(gpt || jev) ? (
+        <div className="grid gap-3 lg:grid-cols-2">
+          {gpt ? (
+            <AIReviewCard pkg={{ ...pkg, ai_review: gpt }} />
+          ) : (
+            <p className="rounded-lg border border-border p-4 text-xs text-muted-foreground">
+              {live?.llm_available
+                ? `${label} review failed. A 401 in the API log means its API key is invalid or expired.`
+                : 'No LLM review. Set AI_PROVIDER and its API key (OPENAI_API_KEY or GEMINI_API_KEY) to enable it.'}
+            </p>
+          )}
+          {jev ? (
+            <JevReviewCard review={jev} classifierVerdict={classifierVerdict} />
+          ) : (
+            <p className="rounded-lg border border-border p-4 text-xs text-muted-foreground">
+              No Jev review. Add TYPESAFE_API_KEY to enable it.
+            </p>
+          )}
+        </div>
+      ) : (
+        <p className="text-xs text-muted-foreground">
+          No AI reviews on this package. Add an LLM key (OpenAI or Gemini) and/or TYPESAFE_API_KEY, then run a live comparison.
+        </p>
+      )}
     </div>
   )
 }

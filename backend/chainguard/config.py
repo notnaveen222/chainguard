@@ -166,6 +166,18 @@ class Settings(BaseSettings):
         validation_alias=AliasChoices("CHAINGUARD_GEMINI_API_KEY", "GEMINI_API_KEY"),
     )
 
+    # --- Optional Jev layer (TypeSafe System One) -------------------------- #
+    # Jev returns typed judgments (a verdict distribution plus yes/no
+    # probabilities) instead of prose. It runs *beside* the GPT review so the two
+    # can be compared; it records its answer and never changes the verdict.
+    jev_enabled: bool = Field(default=True)
+    jev_model: str = Field(default="jev-latest")
+    jev_timeout_seconds: float = Field(default=20.0)
+    typesafe_api_key: str | None = Field(
+        default=None,
+        validation_alias=AliasChoices("CHAINGUARD_TYPESAFE_API_KEY", "TYPESAFE_API_KEY"),
+    )
+
     # --- Nested limits ----------------------------------------------------- #
     limits: AnalysisLimits = Field(default_factory=AnalysisLimits)
 
@@ -200,6 +212,16 @@ class Settings(BaseSettings):
     @property
     def llm_key_env_name(self) -> str:
         return "GEMINI_API_KEY" if self.ai_provider == "gemini" else "OPENAI_API_KEY"
+
+    @property
+    def jev_available(self) -> bool:
+        """True only when Jev is enabled and a TypeSafe key is configured."""
+        return bool(self.jev_enabled and self.resolved_typesafe_key)
+
+    @property
+    def resolved_typesafe_key(self) -> str | None:
+        """TypeSafe API key from settings/.env, falling back to the process env."""
+        return self.typesafe_api_key or os.environ.get("TYPESAFE_API_KEY")
 
     @property
     def resolved_api_key(self) -> str | None:

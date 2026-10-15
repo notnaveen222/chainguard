@@ -21,6 +21,7 @@ Only extracted evidence is sent — never package source archives.
 
 from __future__ import annotations
 
+import time
 from typing import Any, Optional
 
 from pydantic import BaseModel
@@ -38,6 +39,8 @@ class AIReview(BaseModel):
     reasoning: str
     recommendation: str
     model: str = ""
+    #: Wall-clock time of the model call, so GPT and Jev can be compared.
+    latency_ms: Optional[int] = None
 
 
 _INSTRUCTIONS = """You are a senior software supply chain security analyst reviewing a package that an ML classifier flagged during a dependency scan.
@@ -100,8 +103,10 @@ def review_package(finding: Any, client: Any) -> Optional[AIReview]:
     """Ask the LLM for a verdict on one flagged package. Returns None on any failure."""
     settings = get_settings()
     try:
+        started = time.perf_counter()
         text = complete(client, _INSTRUCTIONS, _evidence(finding), _SCHEMA, "package_review")
-        return AIReview(model=settings.llm_model, **parse_json(text))
+        latency_ms = round((time.perf_counter() - started) * 1000)
+        return AIReview(model=settings.llm_model, latency_ms=latency_ms, **parse_json(text))
     except Exception as exc:  # noqa: BLE001 — the classifier verdict stands
         logger.warning("AI review unavailable for %s@%s (%s)", finding.name, finding.version, exc)
         return None

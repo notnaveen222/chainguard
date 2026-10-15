@@ -29,8 +29,9 @@ sqlalchemy==2.0.36
 # --- Reporting ---------------------------------------------------------------
 jinja2==3.1.5
 
-# --- LLM layer (OpenAI; enabled when OPENAI_API_KEY is set — see chainguard/llm/) --
+# --- LLM layer (OpenAI or Gemini via the openai SDK; see chainguard/llm/) ------
 openai>=1.66.0,<4
+typesafe-sdk==0.7.3         # Jev (TypeSafe System One) typed verdicts, optional
 
 # --- CLI / UX ----------------------------------------------------------------
 typer==0.15.1

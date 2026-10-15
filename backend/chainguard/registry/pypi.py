@@ -195,6 +195,11 @@ class PyPIClient:
                 "filename": distribution.get("filename"),
                 "yanked": distribution.get("yanked", False),
                 "requires_python": info.get("requires_python"),
+                # Digests the registry declares for the file, used to verify the
+                # download and to diff versions (registry/diff.py).
+                "registry_digests": {
+                    "sha256": (distribution.get("digests") or {}).get("sha256"),
+                },
             },
         )
 

@@ -1,10 +1,11 @@
 import { useEffect, useState } from 'react'
-import { Brain, Clock, ScanLine, ShieldCheck, Sparkles } from 'lucide-react'
+import { Brain, Clock, Fingerprint, ScanLine, ShieldCheck, Sparkles } from 'lucide-react'
 
 import { api } from './api'
 import AssistantPanel from '@/components/AssistantPanel'
 import { SidebarNav } from '@/components/ui/sidebar-nav'
 import { cn } from '@/lib/utils'
+import DiffPage from './pages/Diff'
 import HistoryPage from './pages/History'
 import ModelPage from './pages/Model'
 import ScanPage from './pages/Scan'
@@ -14,6 +15,11 @@ const PAGES = {
     title: 'Scan',
     icon: ScanLine,
     description: 'Detect malicious packages and find which known vulnerabilities your code can actually reach.',
+  },
+  diff: {
+    title: 'Version diff',
+    icon: Fingerprint,
+    description: 'Check by SHA-256 whether an upgrade actually changed the package, and exactly which files.',
   },
   model: {
     title: 'Model & evaluation',
@@ -28,7 +34,13 @@ const PAGES = {
 }
 
 const NAV_GROUPS = [
-  { heading: 'Analyse', items: [{ id: 'scan', title: 'Scan', icon: ScanLine }] },
+  {
+    heading: 'Analyse',
+    items: [
+      { id: 'scan', title: 'Scan', icon: ScanLine },
+      { id: 'diff', title: 'Version diff', icon: Fingerprint },
+    ],
+  },
   {
     heading: 'Insights',
     items: [
@@ -126,6 +138,7 @@ export default function App() {
                   onAskAI={openAssistant}
                 />
               )}
+              {tab === 'diff' && <DiffPage />}
               {tab === 'model' && <ModelPage />}
               {tab === 'history' && <HistoryPage refreshToken={historyToken} />}
             </div>

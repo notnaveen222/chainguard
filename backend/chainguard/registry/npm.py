@@ -166,6 +166,12 @@ class NpmClient:
                 "dependencies": dependencies,
                 "scripts": scripts,
                 "deprecated": entry.get("deprecated"),
+                # Digests the registry declares for the tarball, used to verify
+                # the download and to diff versions (registry/diff.py).
+                "registry_digests": {
+                    "sha512_integrity": dist.get("integrity"),
+                    "sha1": dist.get("shasum"),
+                },
             },
         )
 

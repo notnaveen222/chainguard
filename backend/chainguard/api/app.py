@@ -131,6 +131,7 @@ async def health() -> dict[str, Any]:
         "llm_enabled": settings.llm_available,
         "ai_provider": settings.ai_provider,
         "assistant_available": assistant_available(),
+        "jev_available": settings.jev_available,
         "thresholds": {
             "malicious": settings.malicious_threshold,
             "suspicious": settings.suspicious_threshold,
@@ -385,6 +386,112 @@ def assistant_chat(request: ChatRequest) -> StreamingResponse:
         media_type="application/x-ndjson",
         headers={"Cache-Control": "no-cache", "X-Accel-Buffering": "no"},
     )
+
+
+# --------------------------------------------------------------------------- #
+# Version diff (SHA-256)
+# --------------------------------------------------------------------------- #
+
+
+class VersionDiffRequest(BaseModel):
+    name: str = Field(min_length=1, max_length=214)
+    old_version: str = Field(min_length=1, max_length=64)
+    new_version: str = Field(min_length=1, max_length=64)
+    ecosystem: str = Field(default="PyPI", description="'npm' or 'PyPI'")
+
+
+@app.post("/api/diff/versions", tags=["diff"])
+async def diff_versions(request: VersionDiffRequest) -> dict[str, Any]:
+    """Compare two versions of a package by SHA-256: archive hash first, then per file.
+
+    Downloads both distributions into memory (never executed, never written to
+    disk) and checks each against the digest the registry published.
+    """
+    from chainguard.registry.archive import ArchiveError
+    from chainguard.registry.diff import compare_versions
+    from chainguard.registry.http import RegistryError
+
+    try:
+        ecosystem = Ecosystem(request.ecosystem)
+    except ValueError:
+        raise HTTPException(400, "ecosystem must be 'npm' or 'PyPI'") from None
+    try:
+        diff = await compare_versions(ecosystem, request.name, request.old_version, request.new_version)
+    except (RegistryError, ArchiveError) as exc:
+        raise HTTPException(404, str(exc)) from None
+    return diff.model_dump()
+
+
+# --------------------------------------------------------------------------- #
+# LLM (Gemini/OpenAI) vs Jev comparison
+# --------------------------------------------------------------------------- #
+
+
+class CompareRequest(BaseModel):
+    scan_id: str
+    package: str
+    version: Optional[str] = None
+
+
+@app.post("/api/compare/review", tags=["compare"])
+def compare_review(request: CompareRequest) -> dict[str, Any]:
+    """Run the configured LLM (Gemini or OpenAI) and Jev on one stored package's evidence, side by side, and time both.
+
+    Both calls get the same extracted evidence and run concurrently, so each
+    latency is that model's own wall-clock time. Results are returned, not
+    stored, and never change the scan's verdict.
+    """
+    import time as _time
+    from concurrent.futures import ThreadPoolExecutor
+
+    from chainguard.llm.client import llm_client
+    from chainguard.llm.jev import jev_client, review_package_jev
+    from chainguard.llm.review import review_package
+    from chainguard.scanner import PackageFinding
+
+    stored = load_scan(request.scan_id)
+    if stored is None:
+        raise HTTPException(404, f"No scan with id {request.scan_id}")
+    raw = next(
+        (p for p in stored.get("packages", [])
+         if p.get("name") == request.package and (not request.version or p.get("version") == request.version)),
+        None,
+    )
+    if raw is None:
+        raise HTTPException(404, f"Package '{request.package}' is not in scan {request.scan_id}")
+
+    finding = PackageFinding.model_validate(raw)
+    # Both models judge the classifier's view of the evidence, not a prior AI verdict.
+    finding.verdict = finding.model_verdict or finding.verdict
+    finding.ai_review = None
+    finding.jev_review = None
+
+    llm, jev = llm_client(), jev_client()
+    if llm is None and jev is None:
+        settings = get_settings()
+        raise HTTPException(
+            503, f"Comparison needs at least one of {settings.llm_key_env_name} and TYPESAFE_API_KEY in the .env file."
+        )
+
+    def _timed(fn: Any, client: Any) -> Any:
+        return fn(finding, client) if client is not None else None
+
+    started = _time.perf_counter()
+    with ThreadPoolExecutor(max_workers=2) as pool:
+        llm_future = pool.submit(_timed, review_package, llm)
+        jev_future = pool.submit(_timed, review_package_jev, jev)
+        llm_review, jev_review = llm_future.result(), jev_future.result()
+    return {
+        "package": finding.name,
+        "version": finding.version,
+        "classifier": {"verdict": finding.verdict, "score": finding.malice_score},
+        "llm": llm_review.model_dump() if llm_review else None,
+        "llm_available": llm is not None,
+        "llm_provider": get_settings().llm_provider_label,
+        "jev": jev_review.model_dump() if jev_review else None,
+        "jev_available": jev is not None,
+        "wall_clock_ms": round((_time.perf_counter() - started) * 1000),
+    }
 
 
 # --------------------------------------------------------------------------- #

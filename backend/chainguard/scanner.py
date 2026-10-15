@@ -38,6 +38,7 @@ from chainguard.analysis.signals import Severity, Signal
 from chainguard.config import get_settings
 from chainguard.llm.explain import explain_package
 from chainguard.llm.client import llm_client
+from chainguard.llm.jev import JevReview, jev_client, review_package_jev
 from chainguard.llm.review import AIReview, review_package
 from chainguard.logging_setup import get_logger
 from chainguard.ml.model import MalwareClassifier
@@ -163,6 +164,9 @@ class PackageFinding(BaseModel):
     #: unless GPT reviewed the package (``ai_review``) and decided otherwise.
     model_verdict: Optional[str] = None
     ai_review: Optional[AIReview] = None
+    #: Jev's typed verdict for the same evidence. Recorded for comparison with
+    #: ``ai_review``; it never changes ``verdict``. See ``llm/jev.py``.
+    jev_review: Optional[JevReview] = None
     signals: list[Signal] = Field(default_factory=list)
     top_contributors: list[tuple[str, float]] = Field(default_factory=list)
     typosquat_target: Optional[str] = None
@@ -760,9 +764,19 @@ def _explain_flagged(findings: list[PackageFinding], limit: int = 25) -> None:
         (f for f in findings if f.is_flagged), key=lambda f: -f.malice_score
     )[: max(limit, get_settings().ai_review_max_packages)]
 
+    to_review = flagged[: get_settings().ai_review_max_packages]
+
+    # Jev runs on the classifier's verdict, before the LLM can overwrite it, and is
+    # independent of the LLM: either can be configured without the other.
+    jev = jev_client()
+    if jev is not None and to_review:
+        with ThreadPoolExecutor(max_workers=6) as pool:
+            jev_reviews = list(pool.map(lambda f: review_package_jev(f, jev), to_review))
+        for finding, jev_review in zip(to_review, jev_reviews):
+            finding.jev_review = jev_review
+
     client = llm_client()
     if client is not None and flagged:
-        to_review = flagged[: get_settings().ai_review_max_packages]
         with ThreadPoolExecutor(max_workers=6) as pool:
             reviews = list(pool.map(lambda f: review_package(f, client), to_review))
         for finding, review in zip(to_review, reviews):
