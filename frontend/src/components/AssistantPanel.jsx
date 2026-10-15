@@ -172,7 +172,8 @@ export default function AssistantPanel({ open, onClose, scanId, available }) {
         <div ref={scrollRef} className="flex-1 overflow-y-auto px-4 py-5 space-y-5">
           {!available && (
             <div className="rounded-xl border border-amber-500/25 bg-amber-500/[0.06] p-4 text-sm text-amber-100/90 leading-relaxed">
-              The consultant needs an OpenAI API key. Add <code className="font-mono text-amber-200">OPENAI_API_KEY=…</code> to the
+              The consultant needs an API key. Set <code className="font-mono text-amber-200">AI_PROVIDER=openai</code> or <code className="font-mono text-amber-200">gemini</code> and add
+              <code className="font-mono text-amber-200"> OPENAI_API_KEY=…</code> or <code className="font-mono text-amber-200">GEMINI_API_KEY=…</code> to the
               <code className="font-mono text-amber-200"> .env</code> file in the repository root, then restart the API.
             </div>
           )}
@@ -291,7 +292,7 @@ export default function AssistantPanel({ open, onClose, scanId, available }) {
             </div>
           </div>
           <p className="mt-2 px-1 text-[11px] text-muted-foreground/70">
-            Uses OpenAI via your API key · reads scans, history and logs · verify important conclusions
+            Uses your configured AI provider (OpenAI or Gemini) · reads scans, history and logs · verify important conclusions
           </p>
         </form>
       </aside>

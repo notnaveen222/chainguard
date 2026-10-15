@@ -29,8 +29,8 @@ sqlalchemy==2.0.36
 # --- Reporting ---------------------------------------------------------------
 jinja2==3.1.5
 
-# --- Optional LLM layer (disabled by default; see chainguard/llm/) ------------
-anthropic==0.42.0
+# --- LLM layer (OpenAI; enabled when OPENAI_API_KEY is set — see chainguard/llm/) --
+openai>=1.66.0,<4
 
 # --- CLI / UX ----------------------------------------------------------------
 typer==0.15.1

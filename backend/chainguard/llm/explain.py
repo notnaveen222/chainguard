@@ -181,20 +181,18 @@ def explain_package(
     fallback = local_explanation(name, version, verdict, signals, typosquat_target)
 
     settings = get_settings()
-    from chainguard.llm.review import openai_client  # noqa: PLC0415 — avoids an import cycle
+    from chainguard.llm.client import complete, llm_client  # noqa: PLC0415
 
-    client = openai_client()
+    client = llm_client()
     if client is None:
         return fallback
 
     try:
-        response = client.responses.create(
-            model=settings.llm_model,
-            instructions=_SYSTEM_PROMPT,
-            input=_build_prompt(name, version, ecosystem, verdict, score, signals, typosquat_target),
-            max_output_tokens=settings.llm_max_tokens,
+        text = complete(
+            client,
+            _SYSTEM_PROMPT,
+            _build_prompt(name, version, ecosystem, verdict, score, signals, typosquat_target),
         )
-        text = (response.output_text or "").strip()
         if not text:
             return fallback
         return Explanation(text=text, source="llm", model=settings.llm_model)

@@ -1,11 +1,11 @@
-"""Hybrid verdicts: GPT reviews packages the classifier flagged.
+"""Hybrid verdicts: an LLM (OpenAI or Gemini) reviews packages the classifier flagged.
 
 Detection is two-stage:
 
 1. **Screening (every package).** Static analysis extracts evidence and the
    trained classifier scores it. This is fast, free, offline and measured
    (grouped cross-validation plus held-out real applications — see the model card).
-2. **Review (flagged/suspicious packages only).** GPT reads the same evidence the
+2. **Review (flagged/suspicious packages only).** The LLM reads the same evidence the
    classifier saw — signals with file:line and snippets, the features that drove
    the score, traced exfiltration flows, typosquat similarity — and returns a
    final verdict with confidence, reasoning and a recommendation.
@@ -21,12 +21,12 @@ Only extracted evidence is sent — never package source archives.
 
 from __future__ import annotations
 
-import json
 from typing import Any, Optional
 
 from pydantic import BaseModel
 
 from chainguard.config import get_settings
+from chainguard.llm.client import complete, parse_json
 from chainguard.logging_setup import get_logger
 
 logger = get_logger(__name__)
@@ -69,19 +69,6 @@ _SCHEMA = {
 }
 
 
-def openai_client() -> Optional[Any]:
-    """An OpenAI client when a key is configured, else None."""
-    settings = get_settings()
-    if not settings.llm_available:
-        return None
-    try:
-        from openai import OpenAI  # noqa: PLC0415 — optional dependency
-    except ImportError:
-        logger.debug("openai package not installed; AI layer disabled")
-        return None
-    return OpenAI(api_key=settings.resolved_api_key, max_retries=2, timeout=60)
-
-
 def _evidence(finding: Any) -> str:
     lines = [
         f"Package: {finding.name}@{finding.version} ({finding.ecosystem})",
@@ -110,18 +97,11 @@ def _evidence(finding: Any) -> str:
 
 
 def review_package(finding: Any, client: Any) -> Optional[AIReview]:
-    """Ask GPT for a verdict on one flagged package. Returns None on any failure."""
+    """Ask the LLM for a verdict on one flagged package. Returns None on any failure."""
     settings = get_settings()
     try:
-        response = client.responses.create(
-            model=settings.llm_model,
-            instructions=_INSTRUCTIONS,
-            input=_evidence(finding),
-            max_output_tokens=settings.llm_max_tokens,
-            text={"format": {"type": "json_schema", "name": "package_review", "schema": _SCHEMA, "strict": True}},
-        )
-        data = json.loads(response.output_text)
-        return AIReview(model=settings.llm_model, **data)
+        text = complete(client, _INSTRUCTIONS, _evidence(finding), _SCHEMA, "package_review")
+        return AIReview(model=settings.llm_model, **parse_json(text))
     except Exception as exc:  # noqa: BLE001 — the classifier verdict stands
         logger.warning("AI review unavailable for %s@%s (%s)", finding.name, finding.version, exc)
         return None

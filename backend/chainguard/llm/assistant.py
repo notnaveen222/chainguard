@@ -417,7 +417,7 @@ TOOLS: list[dict[str, Any]] = [
 SYSTEM_PROMPT = """You are ChainGuard's AI security consultant. A developer talks to you like a trusted colleague about their dependencies and scans: "what happened to this package?", "can I use X?", "is this flag real?", "what should I fix first?", "why did my scan fail?". Give clear, practical advice grounded in real data.
 
 How ChainGuard works:
-- Detection is hybrid. Every package is downloaded and statically analysed (never executed): signals such as install hooks, eval/dynamic execution, process spawning, network access, credential/sensitive-path access, obfuscation, typosquat similarity and composite exfiltration patterns. A gradient-boosting classifier trained on ~2,450 packages (898 real malware samples; benign includes real application dependency trees) scores each one: >=0.60 malicious, >=0.30 suspicious. GPT then reviews flagged packages and its verdict is final ("final_verdict"/"verdict"); "classifier_verdict"/"model_verdict" is the first-stage result. Point out when the two disagree.
+- Detection is hybrid. Every package is downloaded and statically analysed (never executed): signals such as install hooks, eval/dynamic execution, process spawning, network access, credential/sensitive-path access, obfuscation, typosquat similarity and composite exfiltration patterns. A gradient-boosting classifier trained on ~2,450 packages (898 real malware samples; benign includes real application dependency trees) scores each one: >=0.60 malicious, >=0.30 suspicious. An LLM then reviews flagged packages and its verdict is final ("final_verdict"/"verdict"); "classifier_verdict"/"model_verdict" is the first-stage result. Point out when the two disagree.
 - Confirmed exfiltration flows come from a Python data-flow tracer proving a credential read reaches a network send, with exposure: install_time, import_time, call_reachable, call_not_reachable, unknown.
 - Vulnerabilities come from OSV. For Python projects a call graph proves whether the vulnerable function is called (with a call path). npm reachability is import-level only ("assumed_reachable"). Single-package checks cannot assess reachability.
 - "Not inspected" means the package could not be downloaded or had no analysable files: NOT confirmed clean. Large trees may hit the package ceiling.
@@ -464,30 +464,66 @@ def _run_tool(name: str, raw_args: str) -> tuple[str, bool]:
     return text, False
 
 
+def _chat_tools() -> list[dict[str, Any]]:
+    return [
+        {"type": "function", "function": {k: t[k] for k in ("name", "description", "parameters")}}
+        for t in TOOLS
+    ]
+
+
+def _accumulate_tool_call(pending: dict[int, dict[str, Any]], part: Any) -> None:
+    """Merge one streamed tool-call fragment into ``pending``.
+
+    OpenAI streams a call as many fragments sharing an ``index``; Gemini sends
+    each call whole, and may reuse index 0 for parallel calls, so a different
+    non-empty id at an occupied index starts a new call.
+    """
+    index = part.index if part.index is not None else 0
+    entry = pending.get(index)
+    if entry is not None and part.id and entry["id"] and part.id != entry["id"]:
+        index = max(pending) + 1
+        entry = None
+    if entry is None:
+        entry = pending[index] = {"id": "", "name": "", "arguments": "", "extra": None}
+    if part.id:
+        entry["id"] = part.id
+    function = part.function
+    if function is not None:
+        if function.name and not entry["name"]:
+            entry["name"] = function.name
+        if function.arguments:
+            entry["arguments"] += function.arguments
+    # Gemini 3 attaches a thought signature that must be echoed back with the call.
+    extra = (getattr(part, "model_extra", None) or {}).get("extra_content")
+    if extra:
+        entry["extra"] = extra
+
+
 def run_chat(history: list[dict[str, str]], scan_id: Optional[str] = None) -> Iterator[str]:
     """Run one consultant turn, yielding newline-delimited JSON events.
 
     Event types: ``tool`` (a tool call started), ``tool_result`` (it finished),
     ``text`` (streamed answer text), ``error`` and ``done``.
     """
-    from chainguard.llm.review import openai_client
+    from chainguard.llm.client import llm_client
 
-    client = openai_client()
+    settings = get_settings()
+    provider = settings.llm_provider_label
+    client = llm_client()
     if client is None:
-        yield _event("error", message="Add OPENAI_API_KEY to the .env file in the repository root and restart the API.")
+        yield _event("error", message=f"Add {settings.llm_key_env_name} to the .env file in the repository root and restart the API.")
         yield _event("done")
         return
 
     import openai
 
-    settings = get_settings()
-    conversation: list[Any] = []
+    conversation: list[Any] = [{"role": "system", "content": SYSTEM_PROMPT}]
     for turn in history[-30:]:
         role = turn.get("role")
         content = (turn.get("content") or "").strip()
         if role in ("user", "assistant") and content:
             conversation.append({"role": role, "content": content})
-    if not conversation or conversation[-1]["role"] != "user":
+    if len(conversation) < 2 or conversation[-1]["role"] != "user":
         yield _event("error", message="The last message must be from the user.")
         yield _event("done")
         return
@@ -497,52 +533,68 @@ def run_chat(history: list[dict[str, str]], scan_id: Optional[str] = None) -> It
             "content": f"{conversation[-1]['content']}\n\n(Context: the user is currently viewing scan `{scan_id}`.)",
         }
 
+    tools = _chat_tools()
     try:
-        for _ in range(MAX_TOOL_ROUNDS):
-            stream = client.responses.create(
+        for round_no in range(MAX_TOOL_ROUNDS):
+            stream = client.chat.completions.create(
                 model=settings.llm_model,
-                instructions=SYSTEM_PROMPT,
-                input=conversation,
-                tools=TOOLS,
+                messages=conversation,
+                tools=tools,
                 stream=True,
             )
-            response = None
-            for event in stream:
-                if event.type == "response.output_text.delta":
-                    yield _event("text", delta=event.delta)
-                elif event.type == "response.completed":
-                    response = event.response
-                elif event.type in ("response.failed", "error"):
-                    failure = getattr(getattr(event, "response", None), "error", None)
-                    yield _event("error", message=f"OpenAI error: {failure or getattr(event, 'message', '')}")
-            if response is None:
-                break
+            text_parts: list[str] = []
+            pending: dict[int, dict[str, Any]] = {}
+            for chunk in stream:
+                if not chunk.choices:
+                    continue
+                delta = chunk.choices[0].delta
+                if delta.content:
+                    text_parts.append(delta.content)
+                    yield _event("text", delta=delta.content)
+                for part in delta.tool_calls or []:
+                    _accumulate_tool_call(pending, part)
 
-            calls = [item for item in response.output if item.type == "function_call"]
+            calls = [pending[i] for i in sorted(pending) if pending[i]["name"]]
             if not calls:
+                if not text_parts and round_no == 0:
+                    yield _event("error", message=f"{provider} returned an empty response. Try rephrasing.")
                 break
 
-            conversation += response.output
+            for n, call in enumerate(calls):
+                call["id"] = call["id"] or f"call_{round_no}_{n}"
+            conversation.append({
+                "role": "assistant",
+                "content": "".join(text_parts) or None,
+                "tool_calls": [
+                    {
+                        "id": c["id"],
+                        "type": "function",
+                        "function": {"name": c["name"], "arguments": c["arguments"] or "{}"},
+                        **({"extra_content": c["extra"]} if c["extra"] else {}),
+                    }
+                    for c in calls
+                ],
+            })
             for call in calls:
                 try:
-                    shown = json.loads(call.arguments or "{}")
+                    shown = json.loads(call["arguments"] or "{}")
                 except json.JSONDecodeError:
                     shown = {}
-                yield _event("tool", id=call.call_id, name=call.name, input=shown)
-                output, is_error = _run_tool(call.name, call.arguments)
-                yield _event("tool_result", id=call.call_id, name=call.name, is_error=is_error, size=len(output))
-                conversation.append({"type": "function_call_output", "call_id": call.call_id, "output": output})
+                yield _event("tool", id=call["id"], name=call["name"], input=shown)
+                output, is_error = _run_tool(call["name"], call["arguments"])
+                yield _event("tool_result", id=call["id"], name=call["name"], is_error=is_error, size=len(output))
+                conversation.append({"role": "tool", "tool_call_id": call["id"], "content": output})
         else:
             yield _event("error", message="Stopped after too many tool calls.")
     except openai.AuthenticationError:
-        yield _event("error", message="The OpenAI API key was rejected. Check OPENAI_API_KEY in .env.")
+        yield _event("error", message=f"The {provider} API key was rejected. Check {settings.llm_key_env_name} in .env.")
     except openai.RateLimitError:
-        yield _event("error", message="Rate limited by the OpenAI API (or out of credit). Try again shortly.")
+        yield _event("error", message=f"Rate limited by the {provider} API (or out of quota). Try again shortly.")
     except openai.APIConnectionError:
-        yield _event("error", message="Could not reach the OpenAI API. Check the network connection.")
+        yield _event("error", message=f"Could not reach the {provider} API. Check the network connection.")
     except openai.APIStatusError as exc:
         logger.warning("Assistant API error: %s", exc)
-        yield _event("error", message=f"OpenAI API error ({exc.status_code}): {exc.message}")
+        yield _event("error", message=f"{provider} API error ({exc.status_code}): {exc.message}")
     except Exception as exc:  # noqa: BLE001 — never crash the stream silently
         logger.exception("Assistant failed")
         yield _event("error", message=f"Assistant error: {exc}")

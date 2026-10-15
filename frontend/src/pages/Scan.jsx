@@ -552,9 +552,11 @@ function FlaggedPackages({ packages }) {
                     <div className="rounded-lg border border-border bg-white/[0.02] p-4">
                       <p className="eyebrow mb-2">
                         Assessment
-                        <span className="ml-2 normal-case tracking-normal text-muted-foreground/60">
-                          ({pkg.explanation_source === 'llm' ? 'written by Claude' : 'generated locally'})
-                        </span>
+                        {pkg.explanation_source === 'llm' && (
+                          <span className="ml-2 normal-case tracking-normal text-muted-foreground/60">
+                            (written by GPT)
+                          </span>
+                        )}
                       </p>
                       <p className="text-sm text-foreground/80 leading-relaxed">{pkg.explanation}</p>
                     </div>

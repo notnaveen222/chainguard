@@ -134,21 +134,36 @@ class Settings(BaseSettings):
         description="Probability at or above which a package is marked for review.",
     )
 
-    # --- Optional AI layer (OpenAI) ---------------------------------------- #
+    # --- Optional AI layer (OpenAI or Gemini) ------------------------------- #
     # The system is fully functional with no API key and no network: scans use
-    # the trained classifier and local explanations. With a key, GPT reviews
+    # the trained classifier and local explanations. With a key, the LLM reviews
     # flagged packages (hybrid verdict), writes explanations and powers the
-    # assistant chat. See BUILD_LOG.md D-003.
+    # assistant chat. Switch provider with AI_PROVIDER=openai|gemini plus the
+    # matching key; nothing else changes. See BUILD_LOG.md D-003.
     llm_enabled: bool = Field(default=True)
-    llm_model: str = Field(default="gpt-5.6-luna")
+    ai_provider: str = Field(
+        default="openai",
+        validation_alias=AliasChoices("CHAINGUARD_AI_PROVIDER", "AI_PROVIDER"),
+    )
+    llm_model_override: str | None = Field(
+        default=None,
+        validation_alias=AliasChoices("CHAINGUARD_LLM_MODEL"),
+        description="Model name for the active provider; unset uses that provider's default.",
+    )
+    openai_model: str = Field(default="gpt-5.6-luna")
+    gemini_model: str = Field(default="gemini-3.1-flash-lite")
     llm_max_tokens: int = Field(default=1200)
     ai_review_max_packages: int = Field(
         default=30,
-        description="Most flagged/suspicious packages GPT reviews per scan (highest score first).",
+        description="Most flagged/suspicious packages the LLM reviews per scan (highest score first).",
     )
     openai_api_key: str | None = Field(
         default=None,
         validation_alias=AliasChoices("CHAINGUARD_OPENAI_API_KEY", "OPENAI_API_KEY"),
+    )
+    gemini_api_key: str | None = Field(
+        default=None,
+        validation_alias=AliasChoices("CHAINGUARD_GEMINI_API_KEY", "GEMINI_API_KEY"),
     )
 
     # --- Nested limits ----------------------------------------------------- #
@@ -161,6 +176,14 @@ class Settings(BaseSettings):
     def _upper(cls, v: str) -> str:
         return v.upper()
 
+    @field_validator("ai_provider")
+    @classmethod
+    def _known_provider(cls, v: str) -> str:
+        v = v.strip().lower()
+        if v not in ("openai", "gemini"):
+            raise ValueError(f"AI_PROVIDER must be 'openai' or 'gemini', got {v!r}")
+        return v
+
     @property
     def llm_available(self) -> bool:
         """True only when the LLM layer is both enabled *and* usable.
@@ -171,9 +194,43 @@ class Settings(BaseSettings):
         return bool(self.llm_enabled and self.resolved_api_key)
 
     @property
+    def llm_provider_label(self) -> str:
+        return "Gemini" if self.ai_provider == "gemini" else "OpenAI"
+
+    @property
+    def llm_key_env_name(self) -> str:
+        return "GEMINI_API_KEY" if self.ai_provider == "gemini" else "OPENAI_API_KEY"
+
+    @property
     def resolved_api_key(self) -> str | None:
-        """OpenAI API key from settings/.env, falling back to the process env."""
+        """API key for the active provider, from settings/.env or the process env."""
+        if self.ai_provider == "gemini":
+            return self.gemini_api_key or os.environ.get("GEMINI_API_KEY")
         return self.openai_api_key or os.environ.get("OPENAI_API_KEY")
+
+    @property
+    def llm_base_url(self) -> str | None:
+        """OpenAI-compatible endpoint override; None means the SDK default (OpenAI)."""
+        if self.ai_provider == "gemini":
+            return "https://generativelanguage.googleapis.com/v1beta/openai/"
+        return None
+
+    @property
+    def llm_model(self) -> str:
+        """Model for the active provider.
+
+        An override naming the *other* provider's family (e.g. a leftover
+        ``gpt-*`` while AI_PROVIDER=gemini) is ignored, so switching provider
+        never needs a second edit.
+        """
+        default = self.gemini_model if self.ai_provider == "gemini" else self.openai_model
+        override = (self.llm_model_override or "").strip()
+        if not override:
+            return default
+        other_family = "gpt" if self.ai_provider == "gemini" else "gemini"
+        if override.lower().startswith(other_family):
+            return default
+        return override
 
     def ensure_directories(self) -> None:
         """Create the runtime data directories if they do not exist."""

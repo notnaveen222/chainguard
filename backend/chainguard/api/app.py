@@ -50,7 +50,7 @@ async def lifespan(app: FastAPI):
         "trained model" if classifier.is_trained else "rules baseline (no model trained yet)",
     )
     if settings.llm_available:
-        logger.info("LLM explanation layer: enabled")
+        logger.info("LLM layer: enabled (%s, model %s)", settings.llm_provider_label, settings.llm_model)
     yield
 
 
@@ -129,6 +129,7 @@ async def health() -> dict[str, Any]:
         "detector": "model" if classifier.is_trained else "rules-baseline",
         "model_trained": classifier.is_trained,
         "llm_enabled": settings.llm_available,
+        "ai_provider": settings.ai_provider,
         "assistant_available": assistant_available(),
         "thresholds": {
             "malicious": settings.malicious_threshold,
@@ -374,8 +375,9 @@ def assistant_chat(request: ChatRequest) -> StreamingResponse:
     if not assistant_available():
         raise HTTPException(
             503,
-            "The AI consultant needs an OpenAI API key. Add OPENAI_API_KEY to the .env "
-            "file in the repository root and restart the API.",
+            "The AI consultant needs an API key for the configured provider. Set AI_PROVIDER "
+            "(openai or gemini) and OPENAI_API_KEY or GEMINI_API_KEY in the .env file in the "
+            "repository root, then restart the API.",
         )
     history = [turn.model_dump() for turn in request.messages]
     return StreamingResponse(

@@ -37,7 +37,8 @@ from chainguard.analysis.exposure import ExposureResult, classify_exposure
 from chainguard.analysis.signals import Severity, Signal
 from chainguard.config import get_settings
 from chainguard.llm.explain import explain_package
-from chainguard.llm.review import AIReview, openai_client, review_package
+from chainguard.llm.client import llm_client
+from chainguard.llm.review import AIReview, review_package
 from chainguard.logging_setup import get_logger
 from chainguard.ml.model import MalwareClassifier
 from chainguard.models.package import (
@@ -744,8 +745,8 @@ def _to_finding(
 def _explain_flagged(findings: list[PackageFinding], limit: int = 25) -> None:
     """Hybrid review, then a prose explanation for each flagged package.
 
-    Stage 2 of detection (see ``llm/review.py``): when an OpenAI key is
-    configured, GPT reviews the highest-scoring flagged packages and its verdict
+    Stage 2 of detection (see ``llm/review.py``): when an LLM key is
+    configured, the LLM reviews the highest-scoring flagged packages and its verdict
     becomes final, with the classifier's verdict preserved in ``model_verdict``.
     Without a key, or if a review fails, the classifier verdict stands and a
     deterministic local explanation is used.
@@ -759,7 +760,7 @@ def _explain_flagged(findings: list[PackageFinding], limit: int = 25) -> None:
         (f for f in findings if f.is_flagged), key=lambda f: -f.malice_score
     )[: max(limit, get_settings().ai_review_max_packages)]
 
-    client = openai_client()
+    client = llm_client()
     if client is not None and flagged:
         to_review = flagged[: get_settings().ai_review_max_packages]
         with ThreadPoolExecutor(max_workers=6) as pool:
